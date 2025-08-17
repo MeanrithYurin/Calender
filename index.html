@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Yurin Calendar — Categories + PDF Export</title>
-  <!-- jsPDF & AutoTable for real one-click PDF export (no print dialog) -->
+  <title>Yurin Calendar — Pages + Filters + One‑click PDF</title>
+  <!-- jsPDF & AutoTable for direct PDF downloads (no print dialog) -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
   <style>
@@ -53,23 +53,31 @@
 
     .page-list{margin:10px 0 6px; display:grid; gap:8px}
     .page{
-      display:flex; align-items:center; gap:10px; padding:12px 12px; background:var(--panel-2);
-      border:1px solid var(--border); border-radius:14px; cursor:pointer; transition:.18s ease;
+      display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 12px; background:var(--panel-2);
+      border:1px solid var(--border); border-radius:14px; cursor:pointer; transition:transform .12s ease, border-color .12s ease, background .12s ease;
     }
-    .page:hover{transform:translateY(-1px); border-color:#2a3b5f}
+    .page:hover{transform:translateY(-1px); border-color:#2a3b5f; background:#111a2a}
+    .page:active{transform:translateY(0)}
     .page.active{outline:2px solid rgba(255,255,255,.08)}
 
     .btn{
       width:100%; padding:14px 16px; background:linear-gradient(180deg, #2f65f2, #3f59e8);
       color:white; border:none; border-radius:14px; cursor:pointer; font-weight:700;
-      box-shadow:0 10px 18px rgba(76,126,243,.25); transition:transform .1s ease;
+      box-shadow:0 10px 18px rgba(76,126,243,.25); transition:transform .08s ease, box-shadow .12s ease, filter .12s ease;
     }
+    .btn:hover{box-shadow:0 12px 22px rgba(76,126,243,.33); filter:brightness(1.02)}
     .btn:active{transform:translateY(1px)}
-
     .btn-outline{
       width:100%; padding:12px 14px; background:transparent; color:var(--text);
-      border:1px solid var(--border); border-radius:14px; cursor:pointer;
+      border:1px solid var(--border); border-radius:14px; cursor:pointer; transition:background .12s ease, border-color .12s ease;
     }
+    .btn-outline:hover{background:#111a2a; border-color:#2a3b5f}
+    .btn-outline:active{transform:translateY(1px)}
+
+    .nav-btns{display:flex; gap:8px}
+    .nav-btn{width:36px; height:36px; display:grid; place-items:center; border-radius:10px; background:var(--panel-2); border:1px solid var(--border); cursor:pointer; transition:background .12s ease, transform .08s ease, border-color .12s ease}
+    .nav-btn:hover{background:#111a2a; border-color:#2a3b5f}
+    .nav-btn:active{transform:translateY(1px)}
 
     .vspace{height:10px}
 
@@ -80,23 +88,17 @@
     .app-header{
       display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--border);
     }
-    .title{
-      font-size:1.25rem; font-weight:800; letter-spacing:.3px;
-    }
-    .nav-btns{display:flex; gap:8px}
-    .nav-btn{width:36px; height:36px; display:grid; place-items:center; border-radius:10px; background:var(--panel-2); border:1px solid var(--border); cursor:pointer}
+    .title{ font-size:1.25rem; font-weight:800; letter-spacing:.3px; }
 
-    .calendar{
-      padding:14px; display:grid; grid-template-rows:auto 1fr; height:100%;
-    }
+    .calendar{ padding:14px; display:grid; grid-template-rows:auto 1fr; height:100%; }
     .dow{display:grid; grid-template-columns:repeat(7, 1fr); gap:8px; color:var(--muted); font-size:.85rem; padding:6px 4px 8px}
     .grid{display:grid; grid-template-columns:repeat(7, 1fr); grid-auto-rows:110px; gap:8px; overflow:auto; padding-bottom:12px}
 
     .cell{
       position:relative; border:1px solid var(--border); border-radius:14px; background:var(--panel-2);
-      padding:8px; display:flex; flex-direction:column; gap:6px; cursor:pointer; transition:border-color .15s;
+      padding:8px; display:flex; flex-direction:column; gap:6px; cursor:pointer; transition:border-color .15s, background .12s ease;
     }
-    .cell:hover{border-color:#2a3b5f}
+    .cell:hover{border-color:#2a3b5f; background:#0f1929}
     .cell .day{font-weight:700; color:#d6d9df}
     .cell.out{opacity:.45}
     .cell.today{box-shadow:inset 0 0 0 2px var(--accent)}
@@ -117,10 +119,10 @@
     input, select, textarea{ background:var(--panel-2); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
     textarea{ resize:vertical; min-height:70px }
     .actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:14px }
-    .danger{ background:#e85a78 }
 
     .legend{ display:flex; gap:10px; flex-wrap:wrap; margin:12px 0 4px }
-    .legend .filter{ display:flex; align-items:center; gap:8px; border:1px solid var(--border); padding:6px 10px; border-radius:999px; cursor:pointer; }
+    .legend .filter{ display:flex; align-items:center; gap:8px; border:1px solid var(--border); padding:6px 10px; border-radius:999px; cursor:pointer; transition:background .12s ease, border-color .12s ease }
+    .legend .filter:hover{background:#111a2a; border-color:#2a3b5f}
     .legend .filter.active{ outline:2px solid rgba(255,255,255,.06) }
 
     .muted{ color:var(--muted) }
@@ -132,7 +134,7 @@
 
     <div class="section-title">OPEN PAGE</div>
     <div class="page-list" id="pageList">
-      <!-- Filled by JS from categories -->
+      <!-- Filled by JS with real pages (Dashboard, Personal, Work, School, Event) -->
     </div>
 
     <div class="section-title">QUICK ACTIONS</div>
@@ -149,7 +151,7 @@
 
   <main class="app">
     <div class="app-header">
-      <div class="title" id="title">Personal — August 2025</div>
+      <div class="title" id="title">My Calendar — August 2025</div>
       <div class="nav-btns">
         <button class="nav-btn" id="prevMonth" title="Previous month">⟨</button>
         <button class="nav-btn" id="nextMonth" title="Next month">⟩</button>
@@ -214,7 +216,7 @@
           <input type="date" id="r_end" />
         </div>
       </div>
-      <p class="muted" style="margin:8px 0 0">Only events in <b>visible categories</b> will be exported.</p>
+      <p class="muted" style="margin:8px 0 0">Export includes only <b>visible categories</b> (chips on top).</p>
       <div class="actions">
         <button class="btn-outline" id="r_cancel">Cancel</button>
         <button class="btn" id="r_export">Export PDF</button>
@@ -234,7 +236,7 @@
       set(key, val){ localStorage.setItem(key, JSON.stringify(val)) }
     }
 
-    // ===== Default categories =====
+    // ===== Categories =====
     const DEFAULT_CATEGORIES = [
       { id:'personal', name:'Personal', color:getComputedStyle(document.documentElement).getPropertyValue('--clr-personal').trim() },
       { id:'work',     name:'Work',     color:getComputedStyle(document.documentElement).getPropertyValue('--clr-work').trim() },
@@ -243,8 +245,14 @@
     ];
 
     let categories = store.get('mc.categories', DEFAULT_CATEGORIES);
-    let activeCategoryIds = new Set(store.get('mc.activeCats', categories.map(c=>c.id)));
-    let events = store.get('mc.events', []); // {id,title,date(YYYY-MM-DD),time,categoryId,notes}
+
+    // Pages: 'dashboard' (all), or one of the category ids
+    let activePage = store.get('mc.activePage', 'dashboard');
+
+    // Multi-filter chips state (legend). Default follows the active page.
+    let activeCategoryIds = new Set(store.get('mc.activeCats', (activePage==='dashboard' ? categories.map(c=>c.id) : [activePage])));
+
+    let events = store.get('mc.events', []); // {id,title,date,time,categoryId,notes}
 
     // current view state
     let viewDate = new Date();
@@ -282,43 +290,39 @@
     const downloadJson = document.getElementById('downloadJson');
     const restoreJson = document.getElementById('restoreJson');
 
-    // ===== Rendering =====
+    // ===== Page & Category Rendering =====
+    function setPage(id){
+      activePage = id; store.set('mc.activePage', id);
+      activeCategoryIds = new Set(id==='dashboard' ? categories.map(c=>c.id) : [id]);
+      store.set('mc.activeCats', Array.from(activeCategoryIds));
+      updateTitle(); renderCategoriesUI(); renderMonth();
+    }
+
     function renderCategoriesUI(){
       pageList.innerHTML = '';
       legend.innerHTML = '';
 
-      categories.forEach(cat => {
-        // left page list (acts like quick filter to show only one category)
-        const el = document.createElement('div');
-        el.className = 'page' + (activeCategoryIds.size===1 && activeCategoryIds.has(cat.id) ? ' active' : '');
-        el.innerHTML = `<span class="dot" style="background:${cat.color}"></span><div>${cat.name}</div>`;
-        el.addEventListener('click', ()=>{
-          // show only this category when clicked (toggle behavior)
-          if(activeCategoryIds.size===1 && activeCategoryIds.has(cat.id)){
-            // if already single-selected, toggle back to all
-            activeCategoryIds = new Set(categories.map(c=>c.id));
-          }else{
-            activeCategoryIds = new Set([cat.id]);
-          }
-          store.set('mc.activeCats', Array.from(activeCategoryIds));
-          updateTitle();
-          renderCategoriesUI();
-          renderMonth();
-        });
-        pageList.appendChild(el);
+      const pages = [{ id:'dashboard', name:'My Calendar', color: 'var(--accent)' }, ...categories];
 
-        // top legend with multi-select filters
+      pages.forEach(p => {
+        // left page list (radio-style single select)
+        const el = document.createElement('div');
+        el.className = 'page' + (activePage===p.id ? ' active' : '');
+        el.innerHTML = `<div style="display:flex; align-items:center; gap:10px"><span class="dot" style="background:${p.color}"></span><div>${p.name}</div></div>`;
+        el.addEventListener('click', ()=> setPage(p.id));
+        pageList.appendChild(el);
+      });
+
+      // top legend = multi-select filters for export/visibility
+      categories.forEach(cat => {
         const f = document.createElement('div');
         f.className = 'filter' + (activeCategoryIds.has(cat.id)?' active':'');
         f.innerHTML = `<span class="badge" style="background:${cat.color}"></span><span>${cat.name}</span>`;
         f.addEventListener('click', ()=>{
           if(activeCategoryIds.has(cat.id)) activeCategoryIds.delete(cat.id); else activeCategoryIds.add(cat.id);
-          if(activeCategoryIds.size===0){ // avoid none selected
-            activeCategoryIds.add(cat.id);
-          }
+          if(activeCategoryIds.size===0){ activeCategoryIds.add(cat.id); }
           store.set('mc.activeCats', Array.from(activeCategoryIds));
-          renderCategoriesUI();
-          renderMonth();
+          renderCategoriesUI(); renderMonth();
         });
         legend.appendChild(f);
       });
@@ -330,14 +334,14 @@
     function updateTitle(){
       const monthName = viewDate.toLocaleString(undefined,{month:'long'});
       const year = viewDate.getFullYear();
-      let pageLabel = 'All';
-      if(activeCategoryIds.size===1){
-        const id = Array.from(activeCategoryIds)[0];
-        pageLabel = categories.find(c=>c.id===id)?.name || 'All';
+      let pageLabel = 'My Calendar';
+      if(activePage!=='dashboard'){
+        pageLabel = categories.find(c=>c.id===activePage)?.name || 'My Calendar';
       }
       titleEl.textContent = `${pageLabel} — ${monthName} ${year}`;
     }
 
+    // ===== Calendar Grid =====
     function getMonthMatrix(year, month){
       // returns 6 weeks x 7 days matrix of Date objects
       const first = new Date(year, month, 1);
@@ -395,7 +399,8 @@
       m_date.value = prefill.date || toISODate(new Date());
       m_time.value = prefill.time || '';
       m_notes.value = prefill.notes || '';
-      m_category.value = prefill.categoryId || (Array.from(activeCategoryIds)[0] || categories[0].id);
+      // default category follows page: if page is dashboard -> keep previously selected or first category
+      m_category.value = prefill.categoryId || (activePage==='dashboard' ? (categories[0]?.id) : activePage);
       modal.classList.add('open');
     }
     function closeModal(){ modal.classList.remove('open'); }
@@ -442,14 +447,7 @@
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({unit:'pt', format:'a4'});
 
-      const pageLabel = (function(){
-        if(activeCategoryIds.size===1){
-          const id=Array.from(activeCategoryIds)[0];
-          return categories.find(c=>c.id===id)?.name || 'All';
-        }
-        return 'All Categories';
-      })();
-
+      const pageLabel = (activePage==='dashboard') ? 'All Categories' : (categories.find(c=>c.id===activePage)?.name || 'All');
       const title = `Calendar Export — ${pageLabel}`;
       const sub = `${startDate.toDateString()}  →  ${endDate.toDateString()}`;
       doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.text(title, 40, 40);
@@ -501,7 +499,7 @@
 
     // ===== Backup/Restore JSON (optional) =====
     downloadJson.addEventListener('click', ()=>{
-      const data = { categories, activeCategoryIds: Array.from(activeCategoryIds), events };
+      const data = { categories, activePage, activeCategoryIds: Array.from(activeCategoryIds), events };
       const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href=url; a.download='calendar-backup.json'; a.click(); URL.revokeObjectURL(url);
@@ -514,9 +512,11 @@
           try{
             const data = JSON.parse(fr.result);
             categories = data.categories || DEFAULT_CATEGORIES;
-            activeCategoryIds = new Set(data.activeCategoryIds || categories.map(c=>c.id));
+            activePage = data.activePage || 'dashboard';
+            activeCategoryIds = new Set(data.activeCategoryIds || (activePage==='dashboard' ? categories.map(c=>c.id) : [activePage]));
             events = data.events || [];
             store.set('mc.categories', categories);
+            store.set('mc.activePage', activePage);
             store.set('mc.activeCats', Array.from(activeCategoryIds));
             store.set('mc.events', events);
             renderCategoriesUI(); renderMonth();
