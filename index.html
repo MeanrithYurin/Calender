@@ -1,541 +1,538 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MEANRITH YURIN — Work / School / Personal</title>
-<style>
-  :root{
-    --bg:#0f1115;--panel:#171a21;--muted:#8a93a6;--text:#e6e9f2;
-    --primary:#3a86ff;--work:#4dd0e1;--school:#f48fb1;--personal:#ffa62b;
-    --radius:16px
-  }
-  *{box-sizing:border-box} html,body{height:100%}
-  body{margin:0;background:#0f1115;color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yurin Calendar — Categories + PDF Export</title>
+  <!-- jsPDF & AutoTable for real one-click PDF export (no print dialog) -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    :root{
+      --bg:#0f1217; /* dark grid background */
+      --panel:#121722;
+      --panel-2:#0e1420;
+      --muted:#9aa3b2;
+      --text:#e6e8ec;
+      --accent:#4c7ef3;
+      --border:#22304a;
+      --shadow:0 10px 26px rgba(0,0,0,.4);
 
-  .app{display:grid;grid-template-columns:280px  1fr;gap:20px;max-width:1200px;margin:24px auto;padding:0 16px}
-  .sidebar{background:var(--panel);border-radius:var(--radius);padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-  .brand{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--primary)}
-  h1{font-size:18px;margin:0}
-  .section-title{color:var(--muted);font-size:12px;margin:18px 0 8px;text-transform:uppercase;letter-spacing:.1em}
+      /* category colors */
+      --clr-personal:#f6b73c;
+      --clr-work:#56c6c6;
+      --clr-school:#ff8ad4;
+      --clr-event:#7dd957;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', "Khmer OS Content", "Battambang", sans-serif;
+      color:var(--text); background:var(--bg);
+      display:flex; gap:18px; padding:18px; overflow:hidden; }
 
-  /* Top nav (three separate pages) */
-  .nav{display:grid;gap:8px}
-  .nav .btn{
-    display:flex;align-items:center;justify-content:center;gap:8px;
-    padding:12px;border-radius:14px;border:1px solid #1f2430;background:#10131a;
-    color:var(--text);font-weight:800;cursor:pointer
-  }
-  .btn .dot{width:10px;height:10px;border-radius:50%}
-  .btn.work  .dot{background:var(--work)}
-  .btn.school .dot{background:var(--school)}
-  .btn.personal .dot{background:var(--personal)}
-  .btn.active{box-shadow:0 0 0 2px rgba(255,255,255,.06) inset;border-color:#2b3344}
+    /* Subtle grid background */
+    body:before{
+      content:""; position:fixed; inset:0; pointer-events:none;
+      background:linear-gradient(transparent 31px, rgba(255,255,255,.03) 32px),
+                 linear-gradient(90deg, transparent 31px, rgba(255,255,255,.03) 32px);
+      background-size:32px 32px;
+    }
 
-  .main{display:grid;gap:16px}
-  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-  .toolbar .title{font-size:22px;font-weight:700}
-  .toolbar .spacer{flex:1}
-  button{background:var(--primary);color:white;border:none;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer;box-shadow:0 8px 20px rgba(58,134,255,.25);transition:.2s}
-  button:hover{filter:brightness(1.07);transform:translateY(-1px)}
-  .ghost{background:#12151e;border:1px solid #222836;color:var(--text);box-shadow:none}
+    .sidebar{
+      width:280px; min-width:260px; background:var(--panel); border:1px solid var(--border);
+      border-radius:18px; padding:18px; box-shadow:var(--shadow); height:calc(100vh - 36px); overflow:auto;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px; margin-bottom:12px;
+      font-weight:800; letter-spacing:.4px; font-size:1.2rem;
+    }
+    .dot{width:10px; height:10px; border-radius:50%}
 
-  .card{background:var(--panel);border-radius:var(--radius);padding:14px 14px 8px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+    .section-title{margin-top:16px; color:var(--muted); font-size:.85rem; letter-spacing:.06em}
 
-  .day-header{display:flex;align-items:center;justify-content:space-between;margin:4px 0 8px}
-  .day-header h3{margin:0;font-size:16px}
-  .today-chip{margin-left:8px;background:var(--primary);color:#fff;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
-  .focus-day{outline:2px solid var(--primary);background:linear-gradient(180deg, rgba(58,134,255,.08), transparent 22%)}
+    .page-list{margin:10px 0 6px; display:grid; gap:8px}
+    .page{
+      display:flex; align-items:center; gap:10px; padding:12px 12px; background:var(--panel-2);
+      border:1px solid var(--border); border-radius:14px; cursor:pointer; transition:.18s ease;
+    }
+    .page:hover{transform:translateY(-1px); border-color:#2a3b5f}
+    .page.active{outline:2px solid rgba(255,255,255,.08)}
 
-  .task{display:flex;align-items:flex-start;gap:10px;background:#10131a;border:1px solid #232a39;padding:10px;border-radius:12px;margin:8px 0}
-  .task .title{font-weight:600}
-  .task .meta{color:var(--muted);font-size:12px;margin-top:2px}
-  .task .actions{display:flex;gap:8px;margin-left:auto}
-  .task .icon{background:#0d1017;border:1px solid #242b3a;border-radius:8px;padding:6px 8px;cursor:pointer}
-  .task .icon:hover{border-color:#35405a}
+    .btn{
+      width:100%; padding:14px 16px; background:linear-gradient(180deg, #2f65f2, #3f59e8);
+      color:white; border:none; border-radius:14px; cursor:pointer; font-weight:700;
+      box-shadow:0 10px 18px rgba(76,126,243,.25); transition:transform .1s ease;
+    }
+    .btn:active{transform:translateY(1px)}
 
-  /* Month view */
-  .month-head{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;color:var(--muted);font-size:12px;margin:6px 0}
-  .month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-  .daycell{background:#10131a;border:1px solid #232a39;border-radius:12px;padding:8px;min-height:72px;display:flex;flex-direction:column;gap:6px;cursor:pointer}
-  .daycell:hover{border-color:#35405a}
-  .daynum{font-weight:700;color:var(--text);opacity:.9}
-  .count{margin-left:auto;font-size:11px;padding:2px 6px;border-radius:999px;background:#0d1017;border:1px solid #242b3a;color:var(--muted)}
-  .month-today{outline:2px solid var(--primary);box-shadow:0 0 0 3px rgba(58,134,255,.25) inset}
+    .btn-outline{
+      width:100%; padding:12px 14px; background:transparent; color:var(--text);
+      border:1px solid var(--border); border-radius:14px; cursor:pointer;
+    }
 
-  /* Dialog */
-  dialog{border:none;border-radius:16px;padding:0;max-width:520px;width:92vw;background:var(--panel);color:var(--text)}
-  .modal{padding:16px}
-  .form{display:grid;gap:10px}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  label{font-size:13px;color:var(--muted)}
-  input,select,textarea{width:100%;padding:10px;border-radius:10px;background:#0f131a;border:1px solid #243047;color:var(--text)}
-  .footer{display:flex;gap:10px;justify-content:flex-end;margin-top:6px}
-  .empty{color:var(--muted);font-size:13px;padding:6px}
+    .vspace{height:10px}
 
-  /* Blur page when any dialog is open */
-  body.modal-open .app{
-    filter: blur(6px) brightness(0.92);
-    transform: scale(0.995);
-    transition: filter .18s ease, transform .18s ease;
-  }
-  dialog::backdrop{
-    background: rgba(0,0,0,.55);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    animation: fadeInBackdrop .18s ease;
-  }
-  dialog{ animation: dialogPop .18s ease; }
-  @keyframes fadeInBackdrop{ from{background:rgba(0,0,0,0)} to{background:rgba(0,0,0,.55)} }
-  @keyframes dialogPop{ from{ transform:scale(.98); opacity:0 } to{ transform:scale(1); opacity:1 } }
+    .app{
+      flex:1; background:var(--panel); border:1px solid var(--border); border-radius:18px; box-shadow:var(--shadow);
+      overflow:hidden; display:flex; flex-direction:column;
+    }
+    .app-header{
+      display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--border);
+    }
+    .title{
+      font-size:1.25rem; font-weight:800; letter-spacing:.3px;
+    }
+    .nav-btns{display:flex; gap:8px}
+    .nav-btn{width:36px; height:36px; display:grid; place-items:center; border-radius:10px; background:var(--panel-2); border:1px solid var(--border); cursor:pointer}
 
-  /* Print */
-  .print-header{display:none}
-  #printRange{display:none}
-  @media print{
-    body{background:#fff !important;color:#111 !important}
-    .app{grid-template-columns:1fr !important}
-    .sidebar{display:none !important}
-    .toolbar button,.day-header button,.task .actions{display:none !important}
-    .card,.task{background:#fff !important;color:#111 !important;box-shadow:none;border:1px solid #e5e7eb}
-    .grid{grid-template-columns:1fr !important}
-    .print-header{display:block;margin-bottom:12px}
-    .card{break-inside:avoid;page-break-inside:avoid}
+    .calendar{
+      padding:14px; display:grid; grid-template-rows:auto 1fr; height:100%;
+    }
+    .dow{display:grid; grid-template-columns:repeat(7, 1fr); gap:8px; color:var(--muted); font-size:.85rem; padding:6px 4px 8px}
+    .grid{display:grid; grid-template-columns:repeat(7, 1fr); grid-auto-rows:110px; gap:8px; overflow:auto; padding-bottom:12px}
 
-    /* when exporting a custom range, show only that block */
-    body.range-print .main > *:not(#printRange){ display:none !important }
-    body.range-print #printRange{ display:block !important }
-  }
+    .cell{
+      position:relative; border:1px solid var(--border); border-radius:14px; background:var(--panel-2);
+      padding:8px; display:flex; flex-direction:column; gap:6px; cursor:pointer; transition:border-color .15s;
+    }
+    .cell:hover{border-color:#2a3b5f}
+    .cell .day{font-weight:700; color:#d6d9df}
+    .cell.out{opacity:.45}
+    .cell.today{box-shadow:inset 0 0 0 2px var(--accent)}
 
-  /* background grid + name */
-  body::after{content:"";position:fixed;inset:0;pointer-events:none;background-image:
-      linear-gradient(to right, rgba(255,255,255,.03) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255,255,255,.03) 1px, transparent 1px);
-      background-size:24px 24px,24px 24px;z-index:0}
-  body::before{content:"MEANRITH YURIN";position:fixed;top:10px;right:16px;font-weight:900;letter-spacing:.2em;color:rgba(255,255,255,.06);font-size:clamp(20px,4vw,44px);pointer-events:none;z-index:0}
-</style>
+    .pill{
+      display:inline-flex; align-items:center; gap:8px; padding:6px 8px; font-size:.8rem; border-radius:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      background:#1a2334; border:1px solid #263652;
+    }
+    .badge{width:8px; height:8px; border-radius:50%}
+
+    /* Modal */
+    .modal{ position:fixed; inset:0; display:none; place-items:center; background:rgba(0,0,0,.5); z-index:50; }
+    .modal.open{ display:grid; }
+    .card{ width:min(520px, 92vw); background:var(--panel); border:1px solid var(--border); border-radius:18px; padding:18px; box-shadow:var(--shadow) }
+    .row{ display:grid; grid-template-columns:1fr 1fr; gap:12px }
+    .field{ display:flex; flex-direction:column; gap:6px; }
+    label{ color:var(--muted); font-size:.85rem }
+    input, select, textarea{ background:var(--panel-2); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
+    textarea{ resize:vertical; min-height:70px }
+    .actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:14px }
+    .danger{ background:#e85a78 }
+
+    .legend{ display:flex; gap:10px; flex-wrap:wrap; margin:12px 0 4px }
+    .legend .filter{ display:flex; align-items:center; gap:8px; border:1px solid var(--border); padding:6px 10px; border-radius:999px; cursor:pointer; }
+    .legend .filter.active{ outline:2px solid rgba(255,255,255,.06) }
+
+    .muted{ color:var(--muted) }
+  </style>
 </head>
 <body>
-  <div class="app">
-    <aside class="sidebar">
-      <div class="brand"><span class="dot"></span><h1>MEANRITH YURIN</h1></div>
+  <aside class="sidebar">
+    <div class="brand"><span class="dot" style="background:var(--accent)"></span> MEANRITH YURIN</div>
 
-      <div class="section-title">Open page</div>
-      <div class="nav" id="navTabs">
-        <div class="btn work active"   data-cal="work"><span class="dot"></span> Work</div>
-        <div class="btn school"         data-cal="school"><span class="dot"></span> School</div>
-        <div class="btn personal"       data-cal="personal"><span class="dot"></span> Personal</div>
+    <div class="section-title">OPEN PAGE</div>
+    <div class="page-list" id="pageList">
+      <!-- Filled by JS from categories -->
+    </div>
+
+    <div class="section-title">QUICK ACTIONS</div>
+    <button class="btn" id="addBtn">+ Add Task / Event</button>
+    <div class="vspace"></div>
+    <button class="btn-outline" id="exportWeek">Export PDF (This Week)</button>
+    <div class="vspace"></div>
+    <button class="btn-outline" id="exportRange">Export Range → PDF</button>
+    <div class="vspace"></div>
+    <button class="btn-outline" id="downloadJson" title="Backup to JSON">Backup JSON (optional)</button>
+    <div class="vspace"></div>
+    <button class="btn-outline" id="restoreJson" title="Restore from JSON">Restore JSON (optional)</button>
+  </aside>
+
+  <main class="app">
+    <div class="app-header">
+      <div class="title" id="title">Personal — August 2025</div>
+      <div class="nav-btns">
+        <button class="nav-btn" id="prevMonth" title="Previous month">⟨</button>
+        <button class="nav-btn" id="nextMonth" title="Next month">⟩</button>
       </div>
+    </div>
 
-      <div class="section-title">Quick actions</div>
-      <div class="nav">
-        <button id="newBtn">+ Add Task / Event</button>
-        <button id="pdfBtn" class="ghost">Export PDF (This Week)</button>
-        <button id="rangeBtn" class="ghost">Export Range → PDF</button>
+    <div class="calendar">
+      <div class="legend" id="legend"></div>
+      <div class="dow">
+        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
       </div>
-    </aside>
+      <div class="grid" id="grid"></div>
+    </div>
+  </main>
 
-    <main class="main">
-      <div class="toolbar card">
-        <div class="title" id="viewTitle">Work — Next 7 days</div>
-        <div class="spacer"></div>
-        <button class="ghost" id="todayBtn">Jump to Today</button>
-        <button id="monthBtn">Month View</button>
-        <button id="newBtnTop">+ Add</button>
-      </div>
-
-      <div id="printHeader" class="print-header card"></div>
-
-      <!-- Week -->
-      <div class="grid" id="daysGrid"></div>
-
-      <!-- Month -->
-      <div class="card" id="monthView" style="display:none">
-        <div class="day-header">
-          <h3 id="monthTitle">Month</h3>
-          <div>
-            <button class="ghost" id="prevMonth">◀</button>
-            <button class="ghost" id="nextMonth">▶</button>
-          </div>
-        </div>
-        <div class="month-head">
-          <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
-        </div>
-        <div class="month-grid" id="calendarGrid"></div>
-      </div>
-
-      <!-- Custom range printable block -->
-      <div class="card" id="printRange"></div>
-    </main>
-  </div>
-
-  <!-- Add/Edit -->
-  <dialog id="editor">
-    <form method="dialog" class="modal" id="taskForm">
-      <h3 style="margin:0 0 8px">Add / Edit</h3>
-      <div class="form">
-        <div>
+  <!-- Add/Edit Modal -->
+  <div class="modal" id="modal">
+    <div class="card">
+      <h3 style="margin:6px 0 12px">Add Task / Event</h3>
+      <div class="row">
+        <div class="field">
           <label>Title</label>
-          <input id="fTitle" required />
+          <input id="m_title" placeholder="e.g., Team meeting" />
         </div>
-        <div class="row">
-          <div><label>Date</label><input id="fDate" type="date" required /></div>
-          <div><label>Time</label><input id="fTime" type="time" required /></div>
-        </div>
-        <div class="row">
-          <div>
-            <label>Type</label>
-            <select id="fType">
-              <option value="calendar">Calendar</option>
-              <option value="event">Event</option>
-              <option value="personal">Personal</option>
-              <option value="task">Task</option>
-              <option value="note">Note</option>
-            </select>
-          </div>
-          <div><label>Alert (minutes before)</label><input id="fAlert" type="number" min="0" step="5" placeholder="0 = at time" /></div>
-        </div>
-        <div><label>Notes</label><textarea id="fNotes" rows="3" placeholder="Optional"></textarea></div>
-      </div>
-      <div class="footer">
-        <button type="button" class="ghost" id="cancelBtn">Cancel</button>
-        <button id="saveBtn">Save</button>
-      </div>
-    </form>
-  </dialog>
-
-  <!-- Range picker -->
-  <dialog id="rangePicker">
-    <form method="dialog" class="modal">
-      <h3 style="margin:0 0 8px">Export range to PDF</h3>
-      <div class="form">
-        <div class="row">
-          <div><label>From</label><input id="rStart" type="date" required></div>
-          <div><label>To</label><input id="rEnd" type="date" required></div>
+        <div class="field">
+          <label>Category</label>
+          <select id="m_category"></select>
         </div>
       </div>
-      <div class="footer">
-        <button type="button" class="ghost" id="rangeCancel">Cancel</button>
-        <button id="rangeExportBtn">Export PDF</button>
-      </div>
-    </form>
-  </dialog>
-
-<script>
-  // --------- Router (3 pages in one file) ---------
-  const NAV = document.getElementById('navTabs');
-  let currentCal = (location.hash.replace('#','') || 'work'); // 'work' | 'school' | 'personal'
-  function setActiveNav(){
-    NAV.querySelectorAll('.btn').forEach(b=>{
-      b.classList.toggle('active', b.dataset.cal===currentCal);
-    });
-    document.getElementById('viewTitle').textContent =
-      cap(currentCal) + ' — Next 7 days';
-  }
-  NAV.addEventListener('click', e=>{
-    const b = e.target.closest('.btn'); if(!b) return;
-    currentCal = b.dataset.cal;
-    location.hash = '#' + currentCal;
-    tasks = loadTasks(currentCal);
-    weekStart = startOfDay(new Date());
-    monthCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    setActiveNav(); render(); renderMonth(); scheduleAll();
-  });
-  window.addEventListener('hashchange', ()=>{
-    currentCal = (location.hash.replace('#','') || 'work');
-    tasks = loadTasks(currentCal);
-    setActiveNav(); render(); renderMonth(); scheduleAll();
-  });
-
-  // --------- Storage per page ---------
-  function keyFor(cal){ return `cal_${cal}_v1`; }
-  function loadTasks(cal){ try{ return JSON.parse(localStorage.getItem(keyFor(cal))) || [] }catch{ return [] } }
-  function saveTasks(cal, list){ localStorage.setItem(keyFor(cal), JSON.stringify(list)) }
-  let tasks = loadTasks(currentCal);
-
-  // --------- Utilities ---------
-  function cap(s){ return s[0].toUpperCase()+s.slice(1) }
-  function mkId(){ return Math.random().toString(36).slice(2,10) }
-  function mkTask(title,date,time,alertMins=0,notes='',type='calendar'){
-    return { id:mkId(), title, date, time, alertMins:Number(alertMins||0), notes, type, done:false };
-  }
-  const now = ()=>new Date();
-  function startOfDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x }
-  function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x }
-  function fmtDay(d){ return d.toLocaleDateString(undefined,{weekday:'long'}) }
-  function fmtDate(d){ return d.toLocaleDateString(undefined,{month:'short', day:'numeric'}) }
-  function fmtDateFull(d){ return d.toLocaleDateString(undefined,{month:'short', day:'numeric', year:'numeric'}) }
-  function escapeHtml(s){ return s.replace(/[&<>\"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]) ) }
-
-  // --------- Week view ---------
-  const daysGrid = document.getElementById('daysGrid');
-  let weekStart = startOfDay(new Date());
-
-  function render(){
-    const start = weekStart;
-    daysGrid.innerHTML = '';
-    for(let i=0;i<7;i++){
-      const day = addDays(start,i);
-      const dateISO = day.toISOString().slice(0,10);
-      const dayTasks = tasks
-        .filter(t => t.date===dateISO)
-        .sort((a,b)=> a.time.localeCompare(b.time));
-
-      const col = document.createElement('div');
-      col.className='card';
-      col.id = 'day-'+dateISO;
-
-      const isToday = startOfDay(new Date()).getTime()===startOfDay(day).getTime();
-      col.innerHTML = `
-        <div class="day-header">
-          <h3>${i===0? 'Today' : fmtDay(day)} <span style="color:var(--muted);font-weight:500">${fmtDate(day)}</span>${isToday?'<span class="today-chip">TODAY</span>':''}</h3>
-          <button class="ghost" data-add="${dateISO}">+ Add</button>
+      <div class="row" style="margin-top:8px">
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="m_date" />
         </div>
-        <div class="list ${dayTasks.length? '':'empty'}">
-          ${dayTasks.length? '' : '<div class="empty">No tasks yet</div>'}
-        </div>`;
-      if(isToday) col.classList.add('focus-day');
-
-      const listEl = col.querySelector('.list');
-      dayTasks.forEach(t=> listEl.appendChild(renderTask(t)) );
-      col.querySelector('[data-add]').onclick = (e)=> openEditor({date:e.target.dataset.add});
-      daysGrid.appendChild(col);
-    }
-    updatePrintHeader();
-  }
-
-  function renderTask(t){
-    const wrap = document.createElement('div');
-    wrap.className='task';
-    const typeText = t.type ? ` • ${t.type}` : '';
-    wrap.innerHTML = `
-      <div>
-        <div class="title">${escapeHtml(t.title)}</div>
-        <div class="meta">${t.time}${typeText} • ${t.notes? escapeHtml(t.notes): ''}</div>
+        <div class="field">
+          <label>Time</label>
+          <input type="time" id="m_time" />
+        </div>
+      </div>
+      <div class="field" style="margin-top:8px">
+        <label>Notes</label>
+        <textarea id="m_notes" placeholder="Optional details..."></textarea>
       </div>
       <div class="actions">
-        <button class="icon" title="Done" data-done="${t.id}">✔</button>
-        <button class="icon" title="Edit" data-edit="${t.id}">✎</button>
-        <button class="icon" title="Delete" data-del="${t.id}">🗑</button>
-      </div>`;
-    wrap.querySelector('[data-done]').onclick = ()=>{ t.done=!t.done; saveTasks(currentCal,tasks); render(); renderMonth(); };
-    wrap.querySelector('[data-edit]').onclick = ()=> openEditor(t);
-    wrap.querySelector('[data-del]').onclick = ()=>{ if(confirm('Delete this item?')){ tasks = tasks.filter(x=>x.id!==t.id); saveTasks(currentCal,tasks); render(); renderMonth(); } };
-    if(t.done){ wrap.style.opacity=.6; wrap.style.textDecoration='line-through' }
-    return wrap;
-  }
+        <button class="btn-outline" id="cancelModal">Cancel</button>
+        <button class="btn" id="saveModal">Save</button>
+      </div>
+    </div>
+  </div>
 
-  // --------- Month view ---------
-  const monthBtn = document.getElementById('monthBtn');
-  const monthView = document.getElementById('monthView');
-  const monthTitle = document.getElementById('monthTitle');
-  const calendarGrid = document.getElementById('calendarGrid');
-  let monthCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  <!-- Range Export Modal -->
+  <div class="modal" id="rangeModal">
+    <div class="card">
+      <h3 style="margin:6px 0 12px">Export Range → PDF</h3>
+      <div class="row">
+        <div class="field">
+          <label>Start date</label>
+          <input type="date" id="r_start" />
+        </div>
+        <div class="field">
+          <label>End date</label>
+          <input type="date" id="r_end" />
+        </div>
+      </div>
+      <p class="muted" style="margin:8px 0 0">Only events in <b>visible categories</b> will be exported.</p>
+      <div class="actions">
+        <button class="btn-outline" id="r_cancel">Cancel</button>
+        <button class="btn" id="r_export">Export PDF</button>
+      </div>
+    </div>
+  </div>
 
-  function renderMonth(){
-    monthTitle.textContent = cap(currentCal)+' — ' + monthCursor.toLocaleDateString(undefined,{month:'long',year:'numeric'});
-    calendarGrid.innerHTML = '';
+  <script>
+    // ===== Utilities =====
+    const pad = n => String(n).padStart(2, '0');
+    const toISODate = (d)=> `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const parseISO = (s)=> { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
 
-    const firstDow = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1).getDay();
-    const daysIn = new Date(monthCursor.getFullYear(), monthCursor.getMonth()+1, 0).getDate();
-    for(let i=0;i<firstDow;i++) calendarGrid.appendChild(document.createElement('div'));
-
-    const todayISO = startOfDay(new Date()).toISOString().slice(0,10);
-
-    for(let d=1; d<=daysIn; d++){
-      const dt = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), d);
-      const dateISO = dt.toISOString().slice(0,10);
-      const count = tasks.filter(t=> t.date===dateISO).length;
-
-      const cell = document.createElement('div');
-      cell.className='daycell';
-      if(dateISO===todayISO) cell.classList.add('month-today');
-
-      const top = document.createElement('div'); top.style.display='flex'; top.style.alignItems='center'; top.style.gap='6px';
-      const dn  = document.createElement('div'); dn.className='daynum'; dn.textContent=d;
-      const ct  = document.createElement('div'); ct.className='count'; ct.textContent = count>0? String(count): '';
-      top.appendChild(dn); top.appendChild(ct);
-      cell.appendChild(top);
-
-      cell.title = 'Add item on '+dateISO;
-      cell.onclick = ()=> openEditor({date:dateISO});   // click day 17 → open add dialog preset to that date
-
-      calendarGrid.appendChild(cell);
+    // ===== Storage layer =====
+    const store = {
+      get(key, fallback){ try{ return JSON.parse(localStorage.getItem(key)) ?? fallback }catch{ return fallback } },
+      set(key, val){ localStorage.setItem(key, JSON.stringify(val)) }
     }
-  }
 
-  document.getElementById('prevMonth').onclick = ()=>{ monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth()-1, 1); renderMonth(); };
-  document.getElementById('nextMonth').onclick = ()=>{ monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth()+1, 1); renderMonth(); };
-  monthBtn.onclick = ()=>{
-    const showing = monthView.style.display!=='none';
-    monthView.style.display = showing ? 'none' : 'block';
-    if(!showing) renderMonth();
-  };
-
-  // --------- Dialogs / Save ---------
-  const dlg = document.getElementById('editor');
-  const cancelBtn = document.getElementById('cancelBtn');
-  const fTitle = document.getElementById('fTitle');
-  const fDate  = document.getElementById('fDate');
-  const fTime  = document.getElementById('fTime');
-  const fType  = document.getElementById('fType');
-  const fAlert = document.getElementById('fAlert');
-  const fNotes = document.getElementById('fNotes');
-  let editingId = null;
-
-  // blur on open/close
-  dlg.addEventListener('close', ()=> document.body.classList.remove('modal-open'));
-
-  function openEditor(seed={}){
-    editingId = seed.id || null;
-    fTitle.value = seed.title || '';
-    fDate.value  = seed.date || new Date().toISOString().slice(0,10);
-    fTime.value  = seed.time || new Date().toTimeString().slice(0,5);
-    fType.value  = seed.type || 'calendar';
-    fAlert.value = (seed.alertMins ?? 0);
-    fNotes.value = seed.notes || '';
-    dlg.showModal();
-    document.body.classList.add('modal-open');
-  }
-  document.getElementById('newBtn').onclick = ()=> openEditor({});
-  document.getElementById('newBtnTop').onclick = ()=> openEditor({});
-  cancelBtn.onclick = (e)=>{ e.preventDefault(); dlg.close(); };
-
-  document.getElementById('saveBtn').addEventListener('click', (e)=>{
-    e.preventDefault();
-    const data = {
-      title: fTitle.value.trim(),
-      date:  fDate.value,
-      time:  fTime.value,
-      type:  fType.value,
-      alertMins: Number(fAlert.value||0),
-      notes: fNotes.value.trim()
-    };
-    if(!data.title) return;
-    if(editingId){
-      const idx = tasks.findIndex(x=>x.id===editingId);
-      tasks[idx] = { ...tasks[idx], ...data };
-    } else {
-      tasks.push(mkTask(data.title, data.date, data.time, data.alertMins, data.notes, data.type));
-    }
-    saveTasks(currentCal, tasks); dlg.close(); render(); renderMonth(); scheduleAll();
-  });
-
-  // --------- Jump to Today ---------
-  document.getElementById('todayBtn').onclick = ()=>{
-    weekStart = startOfDay(new Date());
-    monthCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    render();
-    const iso = weekStart.toISOString().slice(0,10);
-    const el = document.getElementById('day-'+iso);
-    window.scrollTo({top:0,behavior:'smooth'});
-    if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
-    if(monthView.style.display!=='none') renderMonth();
-  };
-
-  // --------- PDF (this week) ---------
-  const pdfBtn = document.getElementById('pdfBtn');
-  if(pdfBtn){ pdfBtn.onclick = ()=> { updatePrintHeader(); window.print(); }; }
-  function updatePrintHeader(){
-    const header = document.getElementById('printHeader');
-    const start = startOfDay(weekStart);
-    const end = addDays(start,6);
-    header.textContent = `${cap(currentCal)} — ${fmtDateFull(start)} – ${fmtDateFull(end)}`;
-  }
-
-  // --------- Export range → PDF ---------
-  const rangeDlg = document.getElementById('rangePicker');
-  const rangeBtn = document.getElementById('rangeBtn');
-  const rangeCancel = document.getElementById('rangeCancel');
-  const rStart = document.getElementById('rStart');
-  const rEnd   = document.getElementById('rEnd');
-  const rangeExportBtn = document.getElementById('rangeExportBtn');
-  const printRange = document.getElementById('printRange');
-
-  rangeDlg.addEventListener('close', ()=> document.body.classList.remove('modal-open'));
-
-  rangeBtn.onclick = ()=>{
-    // defaults: today → today+6
-    const t = new Date(); const iso=(d)=>d.toISOString().slice(0,10);
-    const e = new Date(t); e.setDate(e.getDate()+6);
-    rStart.value = iso(t); rEnd.value = iso(e);
-    rangeDlg.showModal(); document.body.classList.add('modal-open');
-  };
-  rangeCancel.onclick = (e)=>{ e.preventDefault(); rangeDlg.close(); };
-
-  rangeExportBtn.addEventListener('click', (e)=>{
-    e.preventDefault();
-    if(!rStart.value || !rEnd.value) return;
-    const s = new Date(rStart.value); const eDate = new Date(rEnd.value);
-    if(s > eDate){ alert('Start date must be before End date'); return; }
-    rangeDlg.close();
-    renderPrintRange(rStart.value, rEnd.value);
-    document.body.classList.add('range-print');
-    window.print();
-  });
-
-  window.addEventListener('afterprint', ()=>{
-    // cleanup after printing range
-    document.body.classList.remove('range-print');
-    printRange.style.display = 'none';
-    printRange.innerHTML = '';
-  });
-
-  function renderPrintRange(startISO, endISO){
-    // group tasks by day between [start, end]
-    const s = new Date(startISO); const e = new Date(endISO);
-    const iso = (d)=>d.toISOString().slice(0,10);
-    let html = `<h3 style="margin:0 0 8px">${cap(currentCal)} — ${fmtDateFull(s)} to ${fmtDateFull(e)}</h3>`;
-    let any = false;
-    for(let dt = new Date(s); dt <= e; dt.setDate(dt.getDate()+1)){
-      const key = iso(dt);
-      const dayList = tasks.filter(t=> t.date===key).sort((a,b)=> a.time.localeCompare(b.time));
-      if(dayList.length===0) continue;
-      any = true;
-      html += `<div class="card" style="margin-top:8px;padding:12px">
-        <div style="font-weight:700;margin-bottom:6px">${dt.toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'})}</div>
-        ${dayList.map(t=>`
-          <div style="display:flex;gap:8px;align-items:flex-start;margin:6px 0">
-            <div style="min-width:64px">${t.time}</div>
-            <div>
-              <div style="font-weight:600">${escapeHtml(t.title)}</div>
-              <div style="color:#666">${t.type?('['+t.type+'] '):''}${t.notes? escapeHtml(t.notes): ''}</div>
-            </div>
-          </div>
-        `).join('')}
-      </div>`;
-    }
-    if(!any){
-      html += `<div class="card" style="margin-top:8px;padding:12px;color:#666">No items in this range.</div>`;
-    }
-    printRange.innerHTML = html;
-    printRange.style.display = 'block';
-  }
-
-  // --------- Notifications ---------
-  async function ensurePermission(){ if(!('Notification' in window)) return false; if(Notification.permission==='granted') return true; if(Notification.permission!=='denied'){ const p = await Notification.requestPermission(); return p==='granted'; } return false; }
-  function whenToNotify(task){ const dt = new Date(task.date + 'T' + task.time + ':00'); return dt.getTime() - (task.alertMins||0)*60000; }
-  let timers = []; function clearTimers(){ timers.forEach(clearTimeout); timers=[] }
-  function scheduleAll(){ clearTimers(); ensurePermission(); const nowMs=Date.now(); tasks.forEach(t=>{ const fireAt=whenToNotify(t); if(fireAt>nowMs){ timers.push(setTimeout(()=>fireNotify(t), fireAt-nowMs)); } }); }
-  function fireNotify(task){ try{ if('Notification' in window && Notification.permission==='granted'){ const body = `${t.time}${t.notes? ' • '+t.notes:''}`; const n = new Notification(t.title,{ body }); setTimeout(()=> n.close(), 8000);} else { alert(`[Reminder] ${t.title} @ ${t.time}`)} }catch(e){ console.warn(e)} }
-
-  // --------- Seed if empty (per page) ---------
-  if(tasks.length===0){
-    const today=new Date(); const iso=d=>d.toISOString().slice(0,10);
-    const d1=new Date(today); d1.setHours(10,15,0,0);
-    const d2=new Date(today); d2.setHours(12,15,0,0);
-    tasks=[
-      mkTask('Welcome – add your first item', iso(d1), '10:15', 10, '', 'calendar'),
-      mkTask('Try PDF export (sidebar)',       iso(d2), '12:15', 0,  'Open “Export Range → PDF”.', 'note')
+    // ===== Default categories =====
+    const DEFAULT_CATEGORIES = [
+      { id:'personal', name:'Personal', color:getComputedStyle(document.documentElement).getPropertyValue('--clr-personal').trim() },
+      { id:'work',     name:'Work',     color:getComputedStyle(document.documentElement).getPropertyValue('--clr-work').trim() },
+      { id:'school',   name:'School',   color:getComputedStyle(document.documentElement).getPropertyValue('--clr-school').trim() },
+      { id:'event',    name:'Event',    color:getComputedStyle(document.documentElement).getPropertyValue('--clr-event').trim() },
     ];
-    saveTasks(currentCal,tasks);
-  }
 
-  // --------- Boot ---------
-  setActiveNav();
-  render(); renderMonth(); scheduleAll();
-</script>
+    let categories = store.get('mc.categories', DEFAULT_CATEGORIES);
+    let activeCategoryIds = new Set(store.get('mc.activeCats', categories.map(c=>c.id)));
+    let events = store.get('mc.events', []); // {id,title,date(YYYY-MM-DD),time,categoryId,notes}
+
+    // current view state
+    let viewDate = new Date();
+
+    // ===== DOM refs =====
+    const grid = document.getElementById('grid');
+    const titleEl = document.getElementById('title');
+    const prevBtn = document.getElementById('prevMonth');
+    const nextBtn = document.getElementById('nextMonth');
+    const pageList = document.getElementById('pageList');
+    const legend = document.getElementById('legend');
+
+    // Modal refs
+    const modal = document.getElementById('modal');
+    const m_title = document.getElementById('m_title');
+    const m_category = document.getElementById('m_category');
+    const m_date = document.getElementById('m_date');
+    const m_time = document.getElementById('m_time');
+    const m_notes = document.getElementById('m_notes');
+
+    const addBtn = document.getElementById('addBtn');
+    const cancelModal = document.getElementById('cancelModal');
+    const saveModal = document.getElementById('saveModal');
+
+    // Range export modal
+    const rangeModal = document.getElementById('rangeModal');
+    const r_start = document.getElementById('r_start');
+    const r_end = document.getElementById('r_end');
+    const r_cancel = document.getElementById('r_cancel');
+    const r_export = document.getElementById('r_export');
+
+    const exportWeekBtn = document.getElementById('exportWeek');
+    const exportRangeBtn = document.getElementById('exportRange');
+
+    const downloadJson = document.getElementById('downloadJson');
+    const restoreJson = document.getElementById('restoreJson');
+
+    // ===== Rendering =====
+    function renderCategoriesUI(){
+      pageList.innerHTML = '';
+      legend.innerHTML = '';
+
+      categories.forEach(cat => {
+        // left page list (acts like quick filter to show only one category)
+        const el = document.createElement('div');
+        el.className = 'page' + (activeCategoryIds.size===1 && activeCategoryIds.has(cat.id) ? ' active' : '');
+        el.innerHTML = `<span class="dot" style="background:${cat.color}"></span><div>${cat.name}</div>`;
+        el.addEventListener('click', ()=>{
+          // show only this category when clicked (toggle behavior)
+          if(activeCategoryIds.size===1 && activeCategoryIds.has(cat.id)){
+            // if already single-selected, toggle back to all
+            activeCategoryIds = new Set(categories.map(c=>c.id));
+          }else{
+            activeCategoryIds = new Set([cat.id]);
+          }
+          store.set('mc.activeCats', Array.from(activeCategoryIds));
+          updateTitle();
+          renderCategoriesUI();
+          renderMonth();
+        });
+        pageList.appendChild(el);
+
+        // top legend with multi-select filters
+        const f = document.createElement('div');
+        f.className = 'filter' + (activeCategoryIds.has(cat.id)?' active':'');
+        f.innerHTML = `<span class="badge" style="background:${cat.color}"></span><span>${cat.name}</span>`;
+        f.addEventListener('click', ()=>{
+          if(activeCategoryIds.has(cat.id)) activeCategoryIds.delete(cat.id); else activeCategoryIds.add(cat.id);
+          if(activeCategoryIds.size===0){ // avoid none selected
+            activeCategoryIds.add(cat.id);
+          }
+          store.set('mc.activeCats', Array.from(activeCategoryIds));
+          renderCategoriesUI();
+          renderMonth();
+        });
+        legend.appendChild(f);
+      });
+
+      // category dropdown in modal
+      m_category.innerHTML = categories.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+    }
+
+    function updateTitle(){
+      const monthName = viewDate.toLocaleString(undefined,{month:'long'});
+      const year = viewDate.getFullYear();
+      let pageLabel = 'All';
+      if(activeCategoryIds.size===1){
+        const id = Array.from(activeCategoryIds)[0];
+        pageLabel = categories.find(c=>c.id===id)?.name || 'All';
+      }
+      titleEl.textContent = `${pageLabel} — ${monthName} ${year}`;
+    }
+
+    function getMonthMatrix(year, month){
+      // returns 6 weeks x 7 days matrix of Date objects
+      const first = new Date(year, month, 1);
+      const start = new Date(first);
+      // move to Sunday of first week
+      start.setDate(first.getDate() - first.getDay());
+      const weeks = [];
+      for(let w=0; w<6; w++){
+        const row = [];
+        for(let d=0; d<7; d++){
+          const curr = new Date(start);
+          curr.setDate(start.getDate() + w*7 + d);
+          row.push(curr);
+        }
+        weeks.push(row);
+      }
+      return weeks;
+    }
+
+    function eventsOn(date){
+      const iso = toISODate(date);
+      return events.filter(e => e.date===iso && activeCategoryIds.has(e.categoryId));
+    }
+
+    function renderMonth(){
+      updateTitle();
+      grid.innerHTML = '';
+      const y = viewDate.getFullYear();
+      const m = viewDate.getMonth();
+      const matrix = getMonthMatrix(y,m);
+      const todayISO = toISODate(new Date());
+
+      matrix.flat().forEach(d =>{
+        const cell = document.createElement('div');
+        const inMonth = d.getMonth()===m;
+        cell.className = 'cell' + (!inMonth? ' out':'') + (toISODate(d)===todayISO? ' today':'');
+        cell.innerHTML = `<div class="day">${d.getDate()}</div>`;
+
+        eventsOn(d).sort((a,b)=> (a.time||'99:99').localeCompare(b.time||'99:99')).forEach(ev =>{
+          const cat = categories.find(c=>c.id===ev.categoryId);
+          const pill = document.createElement('div');
+          pill.className = 'pill';
+          pill.innerHTML = `<span class="badge" style="background:${cat?.color}"></span><span>${ev.time? ev.time+' · ' : ''}${ev.title}</span>`;
+          cell.appendChild(pill);
+        });
+
+        cell.addEventListener('click', ()=> openModal({date: toISODate(d)}));
+        grid.appendChild(cell);
+      });
+    }
+
+    // ===== Modal logic =====
+    function openModal(prefill={}){
+      m_title.value = prefill.title || '';
+      m_date.value = prefill.date || toISODate(new Date());
+      m_time.value = prefill.time || '';
+      m_notes.value = prefill.notes || '';
+      m_category.value = prefill.categoryId || (Array.from(activeCategoryIds)[0] || categories[0].id);
+      modal.classList.add('open');
+    }
+    function closeModal(){ modal.classList.remove('open'); }
+
+    addBtn.addEventListener('click', ()=> openModal({ date: toISODate(new Date()) }));
+    cancelModal.addEventListener('click', closeModal);
+
+    saveModal.addEventListener('click', ()=>{
+      const title = m_title.value.trim(); if(!title){ m_title.focus(); return; }
+      const e = {
+        id: crypto.randomUUID?.() || String(Date.now()),
+        title,
+        date: m_date.value,
+        time: m_time.value || '',
+        categoryId: m_category.value,
+        notes: m_notes.value.trim()
+      };
+      events.push(e); store.set('mc.events', events);
+      closeModal(); renderMonth();
+    });
+
+    // ===== Month navigation =====
+    prevBtn.addEventListener('click', ()=>{ viewDate.setMonth(viewDate.getMonth()-1); renderMonth(); });
+    nextBtn.addEventListener('click', ()=>{ viewDate.setMonth(viewDate.getMonth()+1); renderMonth(); });
+
+    // ===== Export: This Week (no print dialog) =====
+    function startOfWeek(d){ const x=new Date(d); x.setDate(d.getDate()-d.getDay()); x.setHours(0,0,0,0); return x; }
+    function endOfWeek(d){ const x=startOfWeek(d); x.setDate(x.getDate()+6); x.setHours(23,59,59,999); return x; }
+    function inRange(dateISO, a, b){ const t=parseISO(dateISO).getTime(); return t>=a.getTime() && t<=b.getTime(); }
+
+    function collectEvents(startDate, endDate){
+      // filtered by active categories
+      const rows = events
+        .filter(e => activeCategoryIds.has(e.categoryId) && inRange(e.date, startDate, endDate))
+        .sort((a,b)=> a.date===b.date ? (a.time||'99:99').localeCompare(b.time||'99:99') : a.date.localeCompare(b.date))
+        .map(e=>{
+          const c = categories.find(x=>x.id===e.categoryId);
+          return [ e.date, e.time || '—', c?.name || '', e.title, e.notes || '' ];
+        });
+      return rows;
+    }
+
+    async function exportPDF({startDate, endDate, filename}){
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({unit:'pt', format:'a4'});
+
+      const pageLabel = (function(){
+        if(activeCategoryIds.size===1){
+          const id=Array.from(activeCategoryIds)[0];
+          return categories.find(c=>c.id===id)?.name || 'All';
+        }
+        return 'All Categories';
+      })();
+
+      const title = `Calendar Export — ${pageLabel}`;
+      const sub = `${startDate.toDateString()}  →  ${endDate.toDateString()}`;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.text(title, 40, 40);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.setTextColor(120);
+      doc.text(sub, 40, 60);
+      doc.setTextColor(20);
+
+      const rows = collectEvents(startDate, endDate);
+      if(rows.length===0){
+        doc.text('No events in this range.', 40, 92);
+      }else{
+        doc.autoTable({
+          startY: 84,
+          head: [['Date','Time','Category','Title','Notes']],
+          body: rows,
+          styles: { fontSize: 10, cellPadding: 6 },
+          headStyles: { fillColor:[46, 74, 120] },
+          theme: 'grid',
+        });
+      }
+
+      doc.save(filename);
+    }
+
+    exportWeekBtn.addEventListener('click', ()=>{
+      const now = new Date();
+      const a = startOfWeek(now); const b = endOfWeek(now);
+      exportPDF({startDate:a, endDate:b, filename:`calendar-week-${a.getFullYear()}-${pad(a.getMonth()+1)}-${pad(a.getDate())}.pdf`});
+    });
+
+    // ===== Export Range modal =====
+    exportRangeBtn.addEventListener('click', ()=>{
+      const todayISO = toISODate(new Date());
+      r_start.value = todayISO;
+      r_end.value = todayISO;
+      rangeModal.classList.add('open');
+    });
+    r_cancel.addEventListener('click', ()=> rangeModal.classList.remove('open'));
+    r_export.addEventListener('click', ()=>{
+      const a = parseISO(r_start.value);
+      const b = parseISO(r_end.value);
+      if(!(a instanceof Date) || !(b instanceof Date) || isNaN(a) || isNaN(b) || a>b){
+        alert('Please choose a valid date range.');
+        return;
+      }
+      rangeModal.classList.remove('open');
+      exportPDF({startDate:a, endDate:b, filename:`calendar-${r_start.value}_to_${r_end.value}.pdf`});
+    });
+
+    // ===== Backup/Restore JSON (optional) =====
+    downloadJson.addEventListener('click', ()=>{
+      const data = { categories, activeCategoryIds: Array.from(activeCategoryIds), events };
+      const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='calendar-backup.json'; a.click(); URL.revokeObjectURL(url);
+    });
+    restoreJson.addEventListener('click', ()=>{
+      const inp = document.createElement('input'); inp.type='file'; inp.accept='.json,application/json';
+      inp.onchange = ()=>{
+        const file = inp.files[0]; if(!file) return;
+        const fr = new FileReader(); fr.onload = ()=>{
+          try{
+            const data = JSON.parse(fr.result);
+            categories = data.categories || DEFAULT_CATEGORIES;
+            activeCategoryIds = new Set(data.activeCategoryIds || categories.map(c=>c.id));
+            events = data.events || [];
+            store.set('mc.categories', categories);
+            store.set('mc.activeCats', Array.from(activeCategoryIds));
+            store.set('mc.events', events);
+            renderCategoriesUI(); renderMonth();
+          }catch(err){ alert('Invalid JSON file.'); }
+        };
+        fr.readAsText(file);
+      };
+      inp.click();
+    });
+
+    // ===== Init =====
+    function init(){
+      renderCategoriesUI();
+      renderMonth();
+    }
+    init();
+  </script>
 </body>
 </html>
