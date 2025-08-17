@@ -1,115 +1,129 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MEANRITH YURIN — Dashboard</title>
-  <style>
-    :root{
-      --bg:#0f1115;--panel:#171a21;--muted:#8a93a6;--text:#e6e9f2;--primary:#3a86ff;--accent:#7c5cff;--success:#2ec27e;--danger:#ff6b6b;--warning:#f7b500;
-      --work:#3a86ff;--school:#2ec27e;--event:#f72585;--personal:#ffa62b;
-      --radius:16px
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{margin:0;background:#0f1115;color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
-    .app{display:grid;grid-template-columns:280px 1fr;gap:20px;max-width:1200px;margin:24px auto;padding:0 16px}
-    .sidebar{background:var(--panel);border-radius:var(--radius);padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-    .brand{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-    .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--primary)}
-    h1{font-size:18px;margin:0}
-    .section-title{color:var(--muted);font-size:12px;margin:18px 0 8px;text-transform:uppercase;letter-spacing:.1em}
-    .filters, .cats{display:flex;flex-direction:column;gap:8px}
-    .chip{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:#10131a;border:1px solid #1f2430;cursor:pointer;transition:.2s}
-    .chip:hover{border-color:#2e3546;transform:translateY(-1px)}
-    .chip input{accent-color:var(--primary)}
-    .legend{width:10px;height:10px;border-radius:50%}
-    .hint{color:var(--muted);font-size:12px;margin-top:8px}
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MEANRITH YURIN — Dashboard</title>
+<style>
+  :root{
+    --bg:#0f1115;--panel:#171a21;--muted:#8a93a6;--text:#e6e9f2;--primary:#3a86ff;--accent:#7c5cff;
+    --work:#4dd0e1;--study:#f48fb1;--event:#f72585;--personal:#ffa62b;--ok:#2ec27e;
+    --radius:16px
+  }
+  *{box-sizing:border-box} html,body{height:100%}
+  body{margin:0;background:#0f1115;color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
 
-    .main{display:grid;gap:16px}
-    .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-    .toolbar .title{font-size:22px;font-weight:700}
-    .toolbar .spacer{flex:1}
-    button, .btn{background:var(--primary);color:white;border:none;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer;box-shadow:0 8px 20px rgba(58,134,255,.25);transition:.2s}
-    button:hover{filter:brightness(1.07);transform:translateY(-1px)}
-    .ghost{background:#12151e;border:1px solid #222836;color:var(--text);box-shadow:none}
+  .app{display:grid;grid-template-columns:280px 1fr;gap:20px;max-width:1200px;margin:24px auto;padding:0 16px}
+  .sidebar{background:var(--panel);border-radius:var(--radius);padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--primary)}
+  h1{font-size:18px;margin:0}
+  .section-title{color:var(--muted);font-size:12px;margin:18px 0 8px;text-transform:uppercase;letter-spacing:.1em}
 
-    .card{background:var(--panel);border-radius:var(--radius);padding:14px 14px 8px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+  /* Segmented tabs (no checkboxes) */
+  .tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .tab{padding:10px 12px;border-radius:12px;border:1px solid #1f2430;background:#10131a;text-align:center;cursor:pointer;font-weight:700}
+  .tab.work.active{border-color:var(--work);box-shadow:0 0 0 2px rgba(77,208,225,.15) inset}
+  .tab.study.active{border-color:var(--study);box-shadow:0 0 0 2px rgba(244,143,177,.15) inset}
 
-    .day-header{display:flex;align-items:center;justify-content:space-between;margin:4px 0 8px}
-    .day-header h3{margin:0;font-size:16px}
+  /* Chips (no checkmarks) */
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{padding:8px 12px;border-radius:999px;border:1px solid #1f2430;background:#10131a;color:var(--text);cursor:pointer;font-weight:600;font-size:13px}
+  .chip[data-cat="work"].active{border-color:var(--work);color:#bcd3ff}
+  .chip[data-cat="school"].active{border-color:var(--ok);color:#c7f3df}
+  .chip[data-cat="event"].active{border-color:var(--event);color:#ffd0e8}
+  .chip[data-cat="personal"].active{border-color:var(--personal);color:#ffe0b2}
+  .chip[data-cat="teaching"].active{border-color:var(--accent);color:#e2dfff}
 
-    .task{display:flex;align-items:flex-start;gap:10px;background:#10131a;border:1px solid #232a39;padding:10px;border-radius:12px;margin:8px 0}
-    .task .title{font-weight:600}
-    .task .meta{color:var(--muted);font-size:12px;margin-top:2px}
-    .task .badge{margin-left:auto;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700;opacity:.95}
-    .task .actions{display:flex;gap:8px;margin-left:6px}
-    .task .icon{background:#0d1017;border:1px solid #242b3a;border-radius:8px;padding:6px 8px;cursor:pointer}
-    .task .icon:hover{border-color:#35405a}
+  .main{display:grid;gap:16px}
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .toolbar .title{font-size:22px;font-weight:700}
+  .toolbar .spacer{flex:1}
+  button{background:var(--primary);color:white;border:none;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer;box-shadow:0 8px 20px rgba(58,134,255,.25);transition:.2s}
+  button:hover{filter:brightness(1.07);transform:translateY(-1px)}
+  .ghost{background:#12151e;border:1px solid #222836;color:var(--text);box-shadow:none}
 
-    .cat-work{background:rgba(58,134,255,.18);color:#bcd3ff;border:1px solid rgba(58,134,255,.35)}
-    .cat-school{background:rgba(46,194,126,.18);color:#c7f3df;border:1px solid rgba(46,194,126,.35)}
-    .cat-event{background:rgba(247,37,133,.18);color:#ffd0e8;border:1px solid rgba(247,37,133,.35)}
-    .cat-personal{background:rgba(255,166,43,.18);color:#ffe0b2;border:1px solid rgba(255,166,43,.35)}
-    .cat-teaching{background:rgba(124,92,255,.18);color:#e2dfff;border:1px solid rgba(124,92,255,.35)}
+  .card{background:var(--panel);border-radius:var(--radius);padding:14px 14px 8px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
 
-    dialog{border:none;border-radius:16px;padding:0;max-width:520px;width:92vw;background:var(--panel);color:var(--text)}
-    .modal{padding:16px}
-    .form{display:grid;gap:10px}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    label{font-size:13px;color:var(--muted)}
-    input,select,textarea{width:100%;padding:10px;border-radius:10px;background:#0f131a;border:1px solid #243047;color:var(--text)}
-    .footer{display:flex;gap:10px;justify-content:flex-end;margin-top:6px}
-    .empty{color:var(--muted);font-size:13px;padding:6px}
+  .day-header{display:flex;align-items:center;justify-content:space-between;margin:4px 0 8px}
+  .day-header h3{margin:0;font-size:16px}
+  .today-chip{margin-left:8px;background:var(--primary);color:#fff;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
+  .focus-day{outline:2px solid var(--primary);background:linear-gradient(180deg, rgba(58,134,255,.08), transparent 22%)}
 
-    /* Month view */
-    .month-head{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;color:var(--muted);font-size:12px;margin:6px 0}
-    .month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-    .daycell{background:#10131a;border:1px solid #232a39;border-radius:12px;padding:8px;min-height:72px;display:flex;flex-direction:column;gap:6px;cursor:pointer}
-    .daycell:hover{border-color:#35405a}
-    .daynum{font-weight:700;color:var(--text);opacity:.9}
-    .count{margin-left:auto;font-size:11px;padding:2px 6px;border-radius:999px;background:#0d1017;border:1px solid #242b3a;color:var(--muted)}
+  .task{display:flex;align-items:flex-start;gap:10px;background:#10131a;border:1px solid #232a39;padding:10px;border-radius:12px;margin:8px 0}
+  .task .title{font-weight:600}
+  .task .meta{color:var(--muted);font-size:12px;margin-top:2px}
+  .task .badge{margin-left:auto;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700;opacity:.95}
+  .task .actions{display:flex;gap:8px;margin-left:6px}
+  .task .icon{background:#0d1017;border:1px solid #242b3a;border-radius:8px;padding:6px 8px;cursor:pointer}
+  .task .icon:hover{border-color:#35405a}
 
-    /* Print styles */
-    .print-header{display:none}
-    @media print{
-      body{background:#fff !important;color:#111 !important}
-      .app{grid-template-columns:1fr !important}
-      .sidebar{display:none !important}
-      .toolbar button,.day-header button,.task .actions{display:none !important}
-      .card,.task{background:#fff !important;color:#111 !important;box-shadow:none;border:1px solid #e5e7eb}
-      .grid{grid-template-columns:1fr !important}
-      .print-header{display:block;margin-bottom:12px}
-      .card{break-inside:avoid;page-break-inside:avoid}
-    }
+  .cat-work{background:rgba(58,134,255,.18);color:#bcd3ff;border:1px solid rgba(58,134,255,.35)}
+  .cat-school{background:rgba(46,194,126,.18);color:#c7f3df;border:1px solid rgba(46,194,126,.35)}
+  .cat-event{background:rgba(247,37,133,.18);color:#ffd0e8;border:1px solid rgba(247,37,133,.35)}
+  .cat-personal{background:rgba(255,166,43,.18);color:#ffe0b2;border:1px solid rgba(255,166,43,.35)}
+  .cat-teaching{background:rgba(124,92,255,.18);color:#e2dfff;border:1px solid rgba(124,92,255,.35)}
 
-    /* branding */
-    body::after{content:"";position:fixed;inset:0;pointer-events:none;background-image:
+  dialog{border:none;border-radius:16px;padding:0;max-width:520px;width:92vw;background:var(--panel);color:var(--text)}
+  .modal{padding:16px}
+  .form{display:grid;gap:10px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  label{font-size:13px;color:var(--muted)}
+  input,select,textarea{width:100%;padding:10px;border-radius:10px;background:#0f131a;border:1px solid #243047;color:var(--text)}
+  .footer{display:flex;gap:10px;justify-content:flex-end;margin-top:6px}
+  .empty{color:var(--muted);font-size:13px;padding:6px}
+
+  /* Month view */
+  .month-head{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;color:var(--muted);font-size:12px;margin:6px 0}
+  .month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .daycell{background:#10131a;border:1px solid #232a39;border-radius:12px;padding:8px;min-height:72px;display:flex;flex-direction:column;gap:6px;cursor:pointer}
+  .daycell:hover{border-color:#35405a}
+  .daynum{font-weight:700;color:var(--text);opacity:.9}
+  .count{margin-left:auto;font-size:11px;padding:2px 6px;border-radius:999px;background:#0d1017;border:1px solid #242b3a;color:var(--muted)}
+  .month-today{outline:2px solid var(--primary);box-shadow:0 0 0 3px rgba(58,134,255,.25) inset}
+
+  /* Print */
+  .print-header{display:none}
+  @media print{
+    body{background:#fff !important;color:#111 !important}
+    .app{grid-template-columns:1fr !important}
+    .sidebar{display:none !important}
+    .toolbar button,.day-header button,.task .actions{display:none !important}
+    .card,.task{background:#fff !important;color:#111 !important;box-shadow:none;border:1px solid #e5e7eb}
+    .grid{grid-template-columns:1fr !important}
+    .print-header{display:block;margin-bottom:12px}
+    .card{break-inside:avoid;page-break-inside:avoid}
+  }
+
+  /* branding */
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;background-image:
       linear-gradient(to right, rgba(255,255,255,.03) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255,255,255,.03) 1px, transparent 1px),
-      radial-gradient(1000px 600px at 80% -10%, rgba(124,92,255,.15), transparent 60%);
-      background-size:24px 24px,24px 24px,auto;z-index:0}
-    body::before{content:"MEANRITH YURIN";position:fixed;top:10px;right:16px;font-weight:900;letter-spacing:.2em;color:rgba(255,255,255,.06);font-size:clamp(20px,4vw,44px);pointer-events:none;z-index:0}
-  </style>
+      linear-gradient(to bottom, rgba(255,255,255,.03) 1px, transparent 1px);
+      background-size:24px 24px,24px 24px;z-index:0}
+  body::before{content:"MEANRITH YURIN";position:fixed;top:10px;right:16px;font-weight:900;letter-spacing:.2em;color:rgba(255,255,255,.06);font-size:clamp(20px,4vw,44px);pointer-events:none;z-index:0}
+</style>
 </head>
 <body>
   <div class="app">
     <aside class="sidebar">
       <div class="brand"><span class="dot"></span><h1>MEANRITH YURIN</h1></div>
-      <div class="section-title">Calendars</div>
-      <div class="filters" id="calendarFilters">
-        <label class="chip"><input type="checkbox" data-cal="main" checked/> <span class="legend" style="background:#4dd0e1"></span> My Calendar</label>
-        <label class="chip"><input type="checkbox" data-cal="cal1" checked/> <span class="legend" style="background:#f48fb1"></span> Calendar 1</label>
+
+      <div class="section-title">Choose calendar</div>
+      <div class="tabs">
+        <div class="tab work active"  data-cal="work">Work</div>
+        <div class="tab study"        data-cal="study">Study</div>
       </div>
-      <div class="section-title">Filters</div>
-      <div class="filters" id="filterContainer">
-        <label class="chip"><input type="checkbox" data-cat="work" checked/> <span class="legend" style="background:var(--work)"></span> Work</label>
-        <label class="chip"><input type="checkbox" data-cat="school" checked/> <span class="legend" style="background:var(--school)"></span> School</label>
-        <label class="chip"><input type="checkbox" data-cat="event" checked/> <span class="legend" style="background:var(--event)"></span> Event</label>
-        <label class="chip"><input type="checkbox" data-cat="personal" checked/> <span class="legend" style="background:var(--personal)"></span> Personal</label>
-        <label class="chip"><input type="checkbox" data-cat="teaching" checked/> <span class="legend" style="background:var(--accent)"></span> Teaching</label>
+
+      <div class="section-title">Types</div>
+      <div class="chips" id="typeChips">
+        <div class="chip active" data-cat="work">Work</div>
+        <div class="chip active" data-cat="school">School</div>
+        <div class="chip active" data-cat="event">Event</div>
+        <div class="chip active" data-cat="personal">Personal</div>
+        <div class="chip active" data-cat="teaching">Teaching</div>
       </div>
+
       <div class="section-title">Quick Actions</div>
       <div class="cats">
         <button id="newBtn">+ Add Task / Event</button>
@@ -148,6 +162,7 @@
     </main>
   </div>
 
+  <!-- Editor -->
   <dialog id="editor">
     <form method="dialog" class="modal" id="taskForm">
       <h3 style="margin:0 0 8px">Add / Edit Task</h3>
@@ -157,18 +172,12 @@
           <input id="fTitle" required />
         </div>
         <div class="row">
-          <div>
-            <label>Date</label>
-            <input id="fDate" type="date" required />
-          </div>
-          <div>
-            <label>Time</label>
-            <input id="fTime" type="time" required />
-          </div>
+          <div><label>Date</label><input id="fDate" type="date" required /></div>
+          <div><label>Time</label><input id="fTime" type="time" required /></div>
         </div>
         <div class="row">
           <div>
-            <label>Category</label>
+            <label>Type</label>
             <select id="fCat">
               <option value="work">Work</option>
               <option value="school">School</option>
@@ -180,8 +189,8 @@
           <div>
             <label>Calendar</label>
             <select id="fCalendar">
-              <option value="main">My Calendar</option>
-              <option value="cal1">Calendar 1</option>
+              <option value="work">Work</option>
+              <option value="study">Study</option>
             </select>
           </div>
           <div>
@@ -201,232 +210,258 @@
     </form>
   </dialog>
 
-  <script>
-    const LS_KEY = 'my_week_tasks_v1';
-    function loadTasks(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)) || [] }catch{ return [] } }
-    function saveTasks(list){ localStorage.setItem(LS_KEY, JSON.stringify(list)) }
-    let tasks = loadTasks();
+<script>
+  const LS_KEY='my_week_tasks_v1';
+  const UI_CAL_KEY='active_calendar';
+  function loadTasks(){ try{return JSON.parse(localStorage.getItem(LS_KEY))||[]}catch{return[]} }
+  function saveTasks(list){ localStorage.setItem(LS_KEY, JSON.stringify(list)) }
+  let tasks = loadTasks();
 
-    function mkId(){ return Math.random().toString(36).slice(2,10) }
-    function mkTask(title, category, date, time, alertMins=0, notes='', calendar='main'){
-      return { id:mkId(), title, category, date, time, alertMins:Number(alertMins||0), notes, calendar, done:false };
-    }
+  // migrate old calendars main/cal1 -> work/study
+  tasks = tasks.map(t=>({ ...t, calendar: t.calendar==='cal1'?'study': (t.calendar==='main'||!t.calendar)?'work':t.calendar }));
+  saveTasks(tasks);
 
-    const daysGrid = document.getElementById('daysGrid');
-    const filterContainer = document.getElementById('filterContainer');
-    const calFilters = document.getElementById('calendarFilters');
+  function mkId(){ return Math.random().toString(36).slice(2,10) }
+  function mkTask(title,category,date,time,alertMins=0,notes='',calendar='work'){
+    return { id:mkId(), title, category, date, time, alertMins:Number(alertMins||0), notes, calendar, done:false };
+  }
 
-    const dlg = document.getElementById('editor');
-    const cancelBtn = document.getElementById('cancelBtn');
-    cancelBtn.onclick = (e)=>{ e.preventDefault(); dlg.close(); };
+  // Active calendar (one at a time)
+  let activeCal = localStorage.getItem(UI_CAL_KEY) || 'work';
 
-    let editingId = null;
-    const fTitle = document.getElementById('fTitle');
-    const fDate  = document.getElementById('fDate');
-    const fTime  = document.getElementById('fTime');
-    const fCat   = document.getElementById('fCat');
-    const fCal   = document.getElementById('fCalendar');
-    const fAlert = document.getElementById('fAlert');
-    const fNotes = document.getElementById('fNotes');
+  // Chips state (types)
+  const chipContainer = document.getElementById('typeChips');
+  function getActiveCats(){
+    return Array.from(chipContainer.querySelectorAll('.chip.active')).map(x=>x.dataset.cat);
+  }
 
-    // Utilities
-    const now = () => new Date();
-    function startOfDay(date){ const d = new Date(date); d.setHours(0,0,0,0); return d }
-    function addDays(date, n){ const d = new Date(date); d.setDate(d.getDate()+n); return d }
-    function fmtDay(d){ return d.toLocaleDateString(undefined,{weekday:'long'}) }
-    function fmtDate(d){ return d.toLocaleDateString(undefined,{month:'short', day:'numeric'}) }
-    function fmtDateFull(d){ return d.toLocaleDateString(undefined,{month:'short', day:'numeric', year:'numeric'}) }
-
-    function getCatFilters(){ return Array.from(filterContainer.querySelectorAll('input[type="checkbox"]')).filter(c=>c.checked).map(c=>c.dataset.cat); }
-    function getCalFilters(){ return Array.from(calFilters.querySelectorAll('input[type="checkbox"]')).filter(c=>c.checked).map(c=>c.dataset.cal); }
-
-    // Week render
-    function render(){
-      const cats = getCatFilters();
-      const cals = getCalFilters();
-      const start = startOfDay(now());
-      daysGrid.innerHTML = '';
-      for(let i=0;i<7;i++){
-        const day = addDays(start,i);
-        const dateISO = day.toISOString().slice(0,10);
-        const dayTasks = tasks
-          .filter(t=> (t.date===dateISO) && cats.includes(t.category) && (cals.includes((t.calendar||'main'))))
-          .sort((a,b)=> a.time.localeCompare(b.time));
-        const col = document.createElement('div');
-        col.className='card';
-        col.innerHTML = `
-          <div class="day-header">
-            <h3>${i===0? 'Today' : fmtDay(day)} <span style="color:var(--muted);font-weight:500">${fmtDate(day)}</span></h3>
-            <button class="ghost" data-add="${dateISO}">+ Add</button>
-          </div>
-          <div class="list ${dayTasks.length? '':'empty'}">
-            ${dayTasks.length? '' : '<div class="empty">No tasks yet</div>'}
-          </div>`;
-        const listEl = col.querySelector('.list');
-        dayTasks.forEach(t=> listEl.appendChild(renderTask(t)) );
-        col.querySelector('[data-add]').addEventListener('click', (e)=> openEditor({date:e.target.dataset.add}));
-        daysGrid.appendChild(col);
-      }
-      updatePrintHeader();
-    }
-
-    function renderTask(t){
-      const wrap = document.createElement('div');
-      wrap.className='task';
-      const badgeClass = { work:'cat-work', school:'cat-school', event:'cat-event', personal:'cat-personal', teaching:'cat-teaching' }[t.category] || 'cat-personal';
-      wrap.innerHTML = `
-        <div>
-          <div class="title">${escapeHtml(t.title)}</div>
-          <div class="meta">${t.time} • ${t.calendar ? 'Cal: '+t.calendar+' • ' : ''}${t.notes? escapeHtml(t.notes): ''}</div>
-        </div>
-        <span class="badge ${badgeClass}">${t.category}</span>
-        <div class="actions">
-          <button class="icon" title="Done" data-done="${t.id}">✔</button>
-          <button class="icon" title="Edit" data-edit="${t.id}">✎</button>
-          <button class="icon" title="Delete" data-del="${t.id}">🗑</button>
-        </div>`;
-      wrap.querySelector('[data-done]').onclick = ()=>{ t.done = !t.done; saveTasks(tasks); render(); renderMonth(); };
-      wrap.querySelector('[data-edit]').onclick = ()=> openEditor(t);
-      wrap.querySelector('[data-del]').onclick = ()=>{ if(confirm('Delete this item?')){ tasks = tasks.filter(x=>x.id!==t.id); saveTasks(tasks); render(); renderMonth(); } };
-      if(t.done){ wrap.style.opacity=.6; wrap.style.textDecoration='line-through' }
-      return wrap;
-    }
-
-    function escapeHtml(s){ return s.replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]) ) }
-
-    function openEditor(seed={}){
-      editingId = seed.id || null;
-      fTitle.value = seed.title || '';
-      fDate.value  = seed.date || new Date().toISOString().slice(0,10);
-      fTime.value  = seed.time || new Date().toTimeString().slice(0,5);
-      fCat.value   = seed.category || 'personal';
-      fCal.value   = seed.calendar || 'main';
-      fAlert.value = (seed.alertMins ?? 0);
-      fNotes.value = seed.notes || '';
-      dlg.showModal();
-    }
-
-    document.getElementById('newBtn').onclick = ()=> openEditor({});
-    document.getElementById('newBtnTop').onclick = ()=> openEditor({});
-
-    // PDF
-    const pdfBtn = document.getElementById('pdfBtn');
-    if(pdfBtn){ pdfBtn.onclick = ()=> { updatePrintHeader(); window.print(); }; }
-
-    // Month view logic
-    const monthBtn = document.getElementById('monthBtn');
-    const monthView = document.getElementById('monthView');
-    const calendarGrid = document.getElementById('calendarGrid');
-    const monthTitle = document.getElementById('monthTitle');
-    const prevMonthBtn = document.getElementById('prevMonth');
-    const nextMonthBtn = document.getElementById('nextMonth');
-    let monthCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-
-    function renderMonth(){
-      if(!monthView) return;
-      const cats = getCatFilters();
-      const cals = getCalFilters();
-
-      monthTitle.textContent = monthCursor.toLocaleDateString(undefined,{month:'long',year:'numeric'});
-      calendarGrid.innerHTML = '';
-
-      const firstDow = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1).getDay();
-      const daysIn = new Date(monthCursor.getFullYear(), monthCursor.getMonth()+1, 0).getDate();
-
-      for(let i=0;i<firstDow;i++){ calendarGrid.appendChild(document.createElement('div')); }
-
-      for(let d=1; d<=daysIn; d++){
-        const dt = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), d);
-        const dateISO = dt.toISOString().slice(0,10);
-        const count = tasks.filter(t=> t.date===dateISO && cats.includes(t.category) && cals.includes(t.calendar||'main')).length;
-
-        const cell = document.createElement('div');
-        cell.className='daycell';
-        const top = document.createElement('div'); top.style.display='flex'; top.style.alignItems='center'; top.style.gap='6px';
-        const dn = document.createElement('div'); dn.className='daynum'; dn.textContent=d;
-        const ct = document.createElement('div'); ct.className='count'; ct.textContent = count>0? String(count): '';
-        top.appendChild(dn); top.appendChild(ct);
-        cell.appendChild(top);
-        cell.title = 'Add item on '+dateISO;
-        cell.onclick = ()=> openEditor({date:dateISO});
-        calendarGrid.appendChild(cell);
-      }
-    }
-
-    if(monthBtn){
-      monthBtn.onclick = ()=>{
-        const showing = monthView.style.display !== 'none';
-        monthView.style.display = showing ? 'none' : 'block';
-        if(!showing) renderMonth();
-      };
-    }
-    if(prevMonthBtn) prevMonthBtn.onclick = ()=>{ monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth()-1, 1); renderMonth(); };
-    if(nextMonthBtn) nextMonthBtn.onclick = ()=>{ monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth()+1, 1); renderMonth(); };
-
-    document.getElementById('todayBtn').onclick = ()=>{
-      window.scrollTo({top:0,behavior:'smooth'});
-      monthCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-      if(monthView.style.display !== 'none') renderMonth();
+  // Elements
+  const daysGrid = document.getElementById('daysGrid');
+  const tabs = document.querySelectorAll('.tab');
+  tabs.forEach(t=>{
+    if(t.dataset.cal===activeCal) t.classList.add('active');
+    t.onclick = () => {
+      tabs.forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      activeCal = t.dataset.cal;
+      localStorage.setItem(UI_CAL_KEY, activeCal);
+      render(); renderMonth();
     };
+  });
+  chipContainer.addEventListener('click', (e)=>{
+    const c = e.target.closest('.chip'); if(!c) return;
+    c.classList.toggle('active');
+    render(); renderMonth();
+  });
 
-    document.getElementById('saveBtn').addEventListener('click', (e)=>{
-      e.preventDefault();
-      const data = {
-        title: fTitle.value.trim(),
-        date:  fDate.value,
-        time:  fTime.value,
-        category: fCat.value,
-        calendar: fCal.value,
-        alertMins: Number(fAlert.value||0),
-        notes: fNotes.value.trim()
-      };
-      if(!data.title) return;
-      if(editingId){
-        const idx = tasks.findIndex(x=>x.id===editingId);
-        tasks[idx] = { ...tasks[idx], ...data };
-      } else {
-        tasks.push(mkTask(data.title, data.category, data.date, data.time, data.alertMins, data.notes, data.calendar));
-      }
-      saveTasks(tasks); render(); renderMonth(); dlg.close(); scheduleAll();
-    });
+  const dlg = document.getElementById('editor');
+  document.getElementById('cancelBtn').onclick=(e)=>{ e.preventDefault(); dlg.close(); };
+  const fTitle = document.getElementById('fTitle');
+  const fDate  = document.getElementById('fDate');
+  const fTime  = document.getElementById('fTime');
+  const fCat   = document.getElementById('fCat');
+  const fCal   = document.getElementById('fCalendar');
+  const fAlert = document.getElementById('fAlert');
+  const fNotes = document.getElementById('fNotes');
+  let editingId = null;
 
-    // Filters refresh both views
-    filterContainer.addEventListener('change', ()=>{ render(); renderMonth(); });
-    calFilters.addEventListener('change',   ()=>{ render(); renderMonth(); });
+  const now = ()=>new Date();
+  function startOfDay(d){const x=new Date(d);x.setHours(0,0,0,0);return x}
+  function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x}
+  function fmtDay(d){return d.toLocaleDateString(undefined,{weekday:'long'})}
+  function fmtDate(d){return d.toLocaleDateString(undefined,{month:'short',day:'numeric'})}
+  function fmtDateFull(d){return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}
+  function escapeHtml(s){return s.replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
-    // Notifications
-    async function ensurePermission(){ if(!('Notification' in window)) return false; if(Notification.permission==='granted') return true; if(Notification.permission!=='denied'){ const p = await Notification.requestPermission(); return p==='granted'; } return false; }
-    function whenToNotify(task){ const dt = new Date(task.date + 'T' + task.time + ':00'); return dt.getTime() - (task.alertMins||0)*60000; }
-    let timers = []; function clearTimers(){ timers.forEach(clearTimeout); timers=[] }
-    function scheduleAll(){ clearTimers(); ensurePermission(); const nowMs=Date.now(); tasks.forEach(t=>{ const fireAt=whenToNotify(t); if(fireAt>nowMs){ timers.push(setTimeout(()=>fireNotify(t), fireAt-nowMs)); } }); }
-    function fireNotify(task){ try{ if('Notification' in window && Notification.permission==='granted'){ const body = `${task.time} • ${(task.calendar||'main').toUpperCase()} • ${task.category.toUpperCase()}${task.notes? ' – '+task.notes:''}`; const n = new Notification(task.title,{ body }); setTimeout(()=> n.close(), 8000);} else { alert(`[Reminder] ${task.title} @ ${task.time}`)} }catch(e){ console.warn(e)} }
-
-    // Upgrade older tasks (no calendar)
-    tasks = tasks.map(t=> ({ calendar:'calendar' in t ? t.calendar : 'main', ...t })); saveTasks(tasks);
-
-    // Seed example if empty
-    if(tasks.length===0){
-      const today = new Date();
-      const iso = (d)=>d.toISOString().slice(0,10);
-      const d1 = new Date(today); d1.setHours(10,15,0,0);
-      const d2 = new Date(today); d2.setHours(12,15,0,0);
-      tasks = [
-        mkTask('Work (Nelson Brian)','teaching', iso(d1), '10:15', 10, '', 'cal1'),
-        mkTask('Lunch','personal',  iso(d2), '12:15', 0, 'with team', 'main')
-      ];
-      saveTasks(tasks);
-    }
-
+  // Week cursor + jump
+  let weekStart = startOfDay(now());
+  function jumpToDate(date){
+    weekStart = startOfDay(date);
+    document.getElementById('monthView').style.display='none';
     render();
-    scheduleAll();
+    const iso = weekStart.toISOString().slice(0,10);
+    const el = document.getElementById('day-'+iso);
+    window.scrollTo({top:0,behavior:'smooth'});
+    if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+  }
 
-    // Print header updater
-    function updatePrintHeader(){
-      const header = document.getElementById('printHeader');
-      const start = startOfDay(now());
-      const end = addDays(start,6);
-      header.textContent = `MEANRITH YURIN — Schedule (${fmtDateFull(start)} – ${fmtDateFull(end)})`;
+  // Render week (active calendar only)
+  function render(){
+    const cats = getActiveCats();
+    const start = weekStart;
+    daysGrid.innerHTML = '';
+    for(let i=0;i<7;i++){
+      const day = addDays(start,i);
+      const dateISO = day.toISOString().slice(0,10);
+      const dayTasks = tasks
+        .filter(t=> t.calendar===activeCal && t.date===dateISO && (cats.includes(t.category)))
+        .sort((a,b)=> a.time.localeCompare(b.time));
+
+      const col = document.createElement('div');
+      col.className='card';
+      col.id = 'day-'+dateISO;
+
+      const isToday = startOfDay(now()).getTime()===startOfDay(day).getTime();
+      col.innerHTML = `
+        <div class="day-header">
+          <h3>${i===0? 'Today' : fmtDay(day)} <span style="color:var(--muted);font-weight:500">${fmtDate(day)}</span>${isToday?'<span class="today-chip">TODAY</span>':''}</h3>
+          <button class="ghost" data-add="${dateISO}">+ Add</button>
+        </div>
+        <div class="list ${dayTasks.length? '':'empty'}">
+          ${dayTasks.length? '' : '<div class="empty">No tasks yet</div>'}
+        </div>`;
+      if(isToday) col.classList.add('focus-day');
+
+      const listEl = col.querySelector('.list');
+      dayTasks.forEach(t=> listEl.appendChild(renderTask(t)) );
+      col.querySelector('[data-add]').onclick=(e)=> openEditor({date:e.target.dataset.add});
+      daysGrid.appendChild(col);
     }
-  </script>
+    updatePrintHeader();
+  }
+
+  function renderTask(t){
+    const wrap = document.createElement('div');
+    wrap.className='task';
+    const badgeClass = { work:'cat-work', school:'cat-school', event:'cat-event', personal:'cat-personal', teaching:'cat-teaching' }[t.category] || 'cat-personal';
+    wrap.innerHTML = `
+      <div>
+        <div class="title">${escapeHtml(t.title)}</div>
+        <div class="meta">${t.time} • ${t.notes? escapeHtml(t.notes): ''}</div>
+      </div>
+      <span class="badge ${badgeClass}">${t.category}</span>
+      <div class="actions">
+        <button class="icon" title="Done" data-done="${t.id}">✔</button>
+        <button class="icon" title="Edit" data-edit="${t.id}">✎</button>
+        <button class="icon" title="Delete" data-del="${t.id}">🗑</button>
+      </div>`;
+    wrap.querySelector('[data-done]').onclick=()=>{ t.done=!t.done; saveTasks(tasks); render(); renderMonth(); };
+    wrap.querySelector('[data-edit]').onclick=()=> openEditor(t);
+    wrap.querySelector('[data-del]').onclick=()=>{ if(confirm('Delete this item?')){ tasks = tasks.filter(x=>x.id!==t.id); saveTasks(tasks); render(); renderMonth(); } };
+    if(t.done){ wrap.style.opacity=.6; wrap.style.textDecoration='line-through' }
+    return wrap;
+  }
+
+  function openEditor(seed={}){
+    editingId = seed.id || null;
+    fTitle.value = seed.title || '';
+    fDate.value  = seed.date || new Date().toISOString().slice(0,10);
+    fTime.value  = seed.time || new Date().toTimeString().slice(0,5);
+    fCat.value   = seed.category || 'personal';
+    fCal.value   = seed.calendar || activeCal;        // default to active calendar
+    fAlert.value = (seed.alertMins ?? 0);
+    fNotes.value = seed.notes || '';
+    dlg.showModal();
+  }
+
+  document.getElementById('newBtn').onclick = ()=> openEditor({});
+  document.getElementById('newBtnTop').onclick = ()=> openEditor({});
+  document.getElementById('todayBtn').onclick = ()=> jumpToDate(new Date());
+
+  // PDF
+  const pdfBtn = document.getElementById('pdfBtn');
+  if(pdfBtn){ pdfBtn.onclick = ()=> { updatePrintHeader(); window.print(); }; }
+
+  // Month view
+  const monthBtn = document.getElementById('monthBtn');
+  const monthView = document.getElementById('monthView');
+  const monthTitle = document.getElementById('monthTitle');
+  const calendarGrid = document.getElementById('calendarGrid');
+  let monthCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+  function renderMonth(){
+    monthTitle.textContent = monthCursor.toLocaleDateString(undefined,{month:'long',year:'numeric'}) + ' — ' + (activeCal==='work'?'Work':'Study');
+    calendarGrid.innerHTML = '';
+    const cats = getActiveCats();
+
+    const firstDow = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1).getDay();
+    const daysIn = new Date(monthCursor.getFullYear(), monthCursor.getMonth()+1, 0).getDate();
+    for(let i=0;i<firstDow;i++) calendarGrid.appendChild(document.createElement('div'));
+
+    const todayISO = startOfDay(new Date()).toISOString().slice(0,10);
+
+    for(let d=1; d<=daysIn; d++){
+      const dt = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), d);
+      const dateISO = dt.toISOString().slice(0,10);
+      const count = tasks.filter(t=> t.calendar===activeCal && t.date===dateISO && cats.includes(t.category)).length;
+
+      const cell = document.createElement('div');
+      cell.className='daycell';
+      if(dateISO===todayISO) cell.classList.add('month-today');
+
+      const top = document.createElement('div');
+      top.style.display='flex'; top.style.alignItems='center'; top.style.gap='6px';
+      const dn  = document.createElement('div'); dn.className='daynum';  dn.textContent=d;
+      const ct  = document.createElement('div'); ct.className='count';    ct.textContent = count>0? String(count): '';
+      top.appendChild(dn); top.appendChild(ct);
+      cell.appendChild(top);
+
+      cell.title = 'Add item on '+dateISO;
+      cell.onclick = ()=>{ openEditor({date:dateISO, calendar:activeCal}); };
+
+      calendarGrid.appendChild(cell);
+    }
+  }
+  document.getElementById('prevMonth').onclick = ()=>{ monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth()-1, 1); renderMonth(); };
+  document.getElementById('nextMonth').onclick = ()=>{ monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth()+1, 1); renderMonth(); };
+  monthBtn.onclick = ()=>{
+    const showing = monthView.style.display!=='none';
+    monthView.style.display = showing ? 'none' : 'block';
+    if(!showing) renderMonth();
+  };
+
+  // Save
+  document.getElementById('saveBtn').addEventListener('click', (e)=>{
+    e.preventDefault();
+    const data = {
+      title: fTitle.value.trim(),
+      date:  fDate.value,
+      time:  fTime.value,
+      category: fCat.value,
+      calendar: fCal.value,
+      alertMins: Number(fAlert.value||0),
+      notes: fNotes.value.trim()
+    };
+    if(!data.title) return;
+    if(editingId){
+      const idx = tasks.findIndex(x=>x.id===editingId);
+      tasks[idx] = { ...tasks[idx], ...data };
+    } else {
+      tasks.push(mkTask(data.title, data.category, data.date, data.time, data.alertMins, data.notes, data.calendar));
+    }
+    saveTasks(tasks); dlg.close(); render(); renderMonth(); scheduleAll();
+  });
+
+  // Notifications
+  async function ensurePermission(){ if(!('Notification' in window)) return false; if(Notification.permission==='granted') return true; if(Notification.permission!=='denied'){ const p = await Notification.requestPermission(); return p==='granted'; } return false; }
+  function whenToNotify(task){ const dt = new Date(task.date+'T'+task.time+':00'); return dt.getTime() - (task.alertMins||0)*60000; }
+  let timers=[]; function clearTimers(){ timers.forEach(clearTimeout); timers=[] }
+  function scheduleAll(){ clearTimers(); ensurePermission(); const nowMs=Date.now(); tasks.forEach(t=>{ const fireAt=whenToNotify(t); if(fireAt>nowMs){ timers.push(setTimeout(()=>fireNotify(t), fireAt-nowMs)); } }); }
+  function fireNotify(task){ try{ if('Notification' in window && Notification.permission==='granted'){ const body = `${task.time} • ${(task.calendar||'work').toUpperCase()} • ${task.category.toUpperCase()}${task.notes? ' – '+task.notes:''}`; const n=new Notification(task.title,{body}); setTimeout(()=>n.close(),8000);} else { alert(`[Reminder] ${task.title} @ ${task.time}`)} }catch(e){ console.warn(e)} }
+
+  // Seed if empty
+  if(tasks.length===0){
+    const today=new Date(); const iso=d=>d.toISOString().slice(0,10);
+    const d1=new Date(today); d1.setHours(10,15,0,0);
+    const d2=new Date(today); d2.setHours(12,15,0,0);
+    const d3=new Date(today); d3.setDate(d3.getDate()+1); d3.setHours(9,0,0,0);
+    tasks=[
+      mkTask('Team Sync','work',    iso(d1),'10:15',10,'',        'work'),
+      mkTask('Lunch','personal',    iso(d2),'12:15',0,'with team','work'),
+      mkTask('Study BBU','school',  iso(d3),'09:00',15,'DB HW',   'study'),
+    ];
+    saveTasks(tasks);
+  }
+
+  // Print header
+  function updatePrintHeader(){
+    const header=document.getElementById('printHeader');
+    const start=startOfDay(weekStart); const end=addDays(start,6);
+    header.textContent=`${activeCal==='work'?'Work':'Study'} — ${fmtDateFull(start)} – ${fmtDateFull(end)}`;
+  }
+
+  // Boot
+  render(); scheduleAll();
+</script>
 </body>
 </html>
