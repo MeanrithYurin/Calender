@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MEANRITH YURIN — Calendar</title>
+<title>MEANRITH YURIN — Calendar + Lists</title>
 <style>
   :root{
     --bg:#0f1115;--panel:#171a21;--muted:#8a93a6;--text:#e6e9f2;
@@ -20,7 +20,16 @@
   h1{font-size:18px;margin:0}
   .section-title{color:var(--muted);font-size:12px;margin:18px 0 8px;text-transform:uppercase;letter-spacing:.1em}
 
-  /* Category chips (no checkboxes) */
+  /* left nav */
+  .nav{display:grid;gap:8px}
+  .nav .btn{
+    display:flex;align-items:center;gap:10px;
+    padding:12px;border-radius:14px;border:1px solid #1f2430;background:#10131a;
+    color:var(--text);font-weight:800;cursor:pointer;justify-content:center
+  }
+  .btn.active{box-shadow:0 0 0 2px rgba(255,255,255,.06) inset;border-color:#2b3344}
+
+  /* calendar chips */
   .chips{display:flex;flex-wrap:wrap;gap:8px}
   .chip{
     display:inline-flex;align-items:center;gap:8px;
@@ -44,13 +53,15 @@
   .ghost{background:#12151e;border:1px solid #222836;color:var(--text);box-shadow:none}
 
   .card{background:var(--panel);border-radius:var(--radius);padding:14px 14px 8px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
 
+  /* week grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
   .day-header{display:flex;align-items:center;justify-content:space-between;margin:4px 0 8px}
   .day-header h3{margin:0;font-size:16px}
   .today-chip{margin-left:8px;background:var(--primary);color:#fff;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
   .focus-day{outline:2px solid var(--primary);background:linear-gradient(180deg, rgba(58,134,255,.08), transparent 22%)}
 
+  /* task cards */
   .task{display:flex;align-items:flex-start;gap:10px;background:#10131a;border:1px solid #232a39;padding:12px;border-radius:12px;margin:8px 0}
   .task .title{font-weight:700}
   .task .meta{color:var(--muted);font-size:12px;margin-top:2px}
@@ -64,7 +75,7 @@
   .p-event{background:rgba(247,37,133,.18);color:#ffd0e8;border:1px solid rgba(247,37,133,.35)}
   .p-teaching{background:rgba(124,92,255,.18);color:#e2dfff;border:1px solid rgba(124,92,255,.35)}
 
-  /* Month view */
+  /* month view */
   .month-head{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;color:var(--muted);font-size:12px;margin:6px 0}
   .month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
   .daycell{background:#10131a;border:1px solid #232a39;border-radius:12px;padding:8px;min-height:80px;display:flex;flex-direction:column;gap:6px;cursor:pointer}
@@ -73,7 +84,13 @@
   .count{margin-left:auto;font-size:11px;padding:2px 6px;border-radius:999px;background:#0d1017;border:1px solid #242b3a;color:var(--muted)}
   .month-today{outline:2px solid var(--primary);box-shadow:0 0 0 3px rgba(58,134,255,.25) inset}
 
-  /* Dialog + blur */
+  /* LIST pages */
+  .list-wrap{display:grid;gap:10px}
+  .list-item{display:flex;gap:10px;align-items:flex-start;background:#10131a;border:1px solid #232a39;padding:12px;border-radius:12px}
+  .list-item .meta{color:var(--muted);font-size:12px}
+  .list-item .actions{margin-left:auto;display:flex;gap:8px}
+
+  /* dialogs + blur */
   dialog{border:none;border-radius:16px;padding:0;max-width:520px;width:92vw;background:var(--panel);color:var(--text)}
   .modal{padding:16px}
   .form{display:grid;gap:10px}
@@ -88,15 +105,15 @@
   dialog{animation: dialogPop .18s ease}
   @keyframes dialogPop{from{transform:scale(.98);opacity:0}to{transform:scale(1);opacity:1}}
 
-  /* Print */
+  /* print */
   .print-header{display:none}
   #printRange{display:none}
   @media print{
     body{background:#fff !important;color:#111 !important}
     .app{grid-template-columns:1fr !important}
     .sidebar{display:none !important}
-    .toolbar button,.day-header button,.task .actions{display:none !important}
-    .card,.task{background:#fff !important;color:#111 !important;box-shadow:none;border:1px solid #e5e7eb}
+    .toolbar button,.day-header button,.task .actions,.list-item .actions{display:none !important}
+    .card,.task,.list-item{background:#fff !important;color:#111 !important;box-shadow:none;border:1px solid #e5e7eb}
     .grid{grid-template-columns:1fr !important}
     .print-header{display:block;margin-bottom:12px}
     .card{break-inside:avoid;page-break-inside:avoid}
@@ -104,7 +121,7 @@
     body.range-print #printRange{ display:block !important }
   }
 
-  /* background grid + name */
+  /* background flair + name */
   body::after{content:"";position:fixed;inset:0;pointer-events:none;background-image:
       linear-gradient(to right, rgba(255,255,255,.03) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(255,255,255,.03) 1px, transparent 1px);
@@ -117,25 +134,37 @@
     <aside class="sidebar">
       <div class="brand"><span class="dot"></span><h1>MEANRITH YURIN</h1></div>
 
-      <div class="section-title">Filters</div>
-      <div class="chips" id="chipFilters">
-        <div class="chip work active" data-cat="work"><span class="dot"></span>Work</div>
-        <div class="chip school active" data-cat="school"><span class="dot"></span>School</div>
-        <div class="chip personal active" data-cat="personal"><span class="dot"></span>Personal</div>
-        <div class="chip event active" data-cat="event"><span class="dot"></span>Event</div>
-        <div class="chip teaching active" data-cat="teaching"><span class="dot"></span>Teaching</div>
+      <div class="section-title">Open page</div>
+      <div class="nav" id="navTabs">
+        <div class="btn active" data-route="calendar">Calendar</div>
+        <div class="btn" data-route="work">Work</div>
+        <div class="btn" data-route="school">School</div>
+        <div class="btn" data-route="personal">Personal</div>
+      </div>
+
+      <!-- calendar-only filters -->
+      <div id="calFilterBox">
+        <div class="section-title">Calendar filters</div>
+        <div class="chips" id="chipFilters">
+          <div class="chip work active" data-cat="work"><span class="dot"></span>Work</div>
+          <div class="chip school active" data-cat="school"><span class="dot"></span>School</div>
+          <div class="chip personal active" data-cat="personal"><span class="dot"></span>Personal</div>
+          <div class="chip event active" data-cat="event"><span class="dot"></span>Event</div>
+          <div class="chip teaching active" data-cat="teaching"><span class="dot"></span>Teaching</div>
+        </div>
       </div>
 
       <div class="section-title">Quick actions</div>
       <div class="chips" style="gap:10px">
-        <button id="newBtn">+ Add Task / Event</button>
+        <button id="newBtn">+ Add</button>
         <button id="pdfBtn" class="ghost">Export PDF (This Week)</button>
         <button id="rangeBtn" class="ghost">Export Range → PDF</button>
       </div>
     </aside>
 
     <main class="main">
-      <div class="toolbar card">
+      <!-- CALENDAR TOOLBAR -->
+      <div class="toolbar card" id="calToolbar">
         <div class="title">Next 7 days</div>
         <div class="spacer"></div>
         <button class="ghost" id="todayBtn">Jump to Today</button>
@@ -145,10 +174,10 @@
 
       <div id="printHeader" class="print-header card"></div>
 
-      <!-- Week -->
+      <!-- CALENDAR: week -->
       <div class="grid" id="daysGrid"></div>
 
-      <!-- Month -->
+      <!-- CALENDAR: month -->
       <div class="card" id="monthView" style="display:none">
         <div class="day-header">
           <h3 id="monthTitle">Month</h3>
@@ -163,28 +192,34 @@
         <div class="month-grid" id="calendarGrid"></div>
       </div>
 
+      <!-- LIST PAGES (Work / School / Personal) -->
+      <div class="card" id="listPage" style="display:none">
+        <div class="day-header">
+          <h3 id="listTitle">List</h3>
+          <button class="ghost" id="listAddBtn">+ Add</button>
+        </div>
+        <div class="list-wrap" id="listWrap"></div>
+      </div>
+
       <!-- Custom range printable block -->
       <div class="card" id="printRange"></div>
     </main>
   </div>
 
-  <!-- Add/Edit -->
-  <dialog id="editor">
-    <form method="dialog" class="modal" id="taskForm">
+  <!-- CALENDAR Add/Edit -->
+  <dialog id="editorCal">
+    <form method="dialog" class="modal">
       <h3 style="margin:0 0 8px">Add / Edit</h3>
       <div class="form">
-        <div>
-          <label>Title</label>
-          <input id="fTitle" required />
-        </div>
+        <div><label>Title</label><input id="cTitle" required /></div>
         <div class="row">
-          <div><label>Date</label><input id="fDate" type="date" required /></div>
-          <div><label>Time</label><input id="fTime" type="time" required /></div>
+          <div><label>Date</label><input id="cDate" type="date" required /></div>
+          <div><label>Time</label><input id="cTime" type="time" required /></div>
         </div>
         <div class="row">
           <div>
             <label>Category</label>
-            <select id="fCat">
+            <select id="cCat">
               <option value="work">Work</option>
               <option value="school">School</option>
               <option value="personal">Personal</option>
@@ -192,13 +227,32 @@
               <option value="teaching">Teaching</option>
             </select>
           </div>
-          <div><label>Alert (minutes before)</label><input id="fAlert" type="number" min="0" step="5" placeholder="0 = at time" /></div>
+          <div><label>Alert (minutes before)</label><input id="cAlert" type="number" min="0" step="5" placeholder="0 = at time" /></div>
         </div>
-        <div><label>Notes</label><textarea id="fNotes" rows="3" placeholder="Optional"></textarea></div>
+        <div><label>Notes</label><textarea id="cNotes" rows="3" placeholder="Optional"></textarea></div>
       </div>
       <div class="footer">
-        <button type="button" class="ghost" id="cancelBtn">Cancel</button>
-        <button id="saveBtn">Save</button>
+        <button type="button" class="ghost" id="cCancel">Cancel</button>
+        <button id="cSave">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- LIST Add/Edit -->
+  <dialog id="editorList">
+    <form method="dialog" class="modal">
+      <h3 style="margin:0 0 8px">Add / Edit (List)</h3>
+      <div class="form">
+        <div><label>Title</label><input id="lTitle" required /></div>
+        <div class="row">
+          <div><label>Date</label><input id="lDate" type="date" /></div>
+          <div><label>Time</label><input id="lTime" type="time" /></div>
+        </div>
+        <div><label>Notes</label><textarea id="lNotes" rows="3" placeholder="Optional"></textarea></div>
+      </div>
+      <div class="footer">
+        <button type="button" class="ghost" id="lCancel">Cancel</button>
+        <button id="lSave">Save</button>
       </div>
     </form>
   </dialog>
@@ -221,316 +275,414 @@
   </dialog>
 
 <script>
-  // ---------- Storage (unified) + migrate old per-page data ----------
-  const NEW_KEY = 'unified_tasks_v1';
-  function mkId(){ return Math.random().toString(36).slice(2,10) }
-  function loadUnified(){
-    const existing = localStorage.getItem(NEW_KEY);
-    if(existing) return JSON.parse(existing);
-    // migrate from old per-page keys if present
-    const map = [['work','cal_work_v1'],['school','cal_school_v1'],['personal','cal_personal_v1']];
-    const merged = [];
-    map.forEach(([cat,key])=>{
-      try{
-        const arr = JSON.parse(localStorage.getItem(key)||'[]');
-        arr.forEach(t => merged.push({
-          id: mkId(), title:t.title, date:t.date, time:t.time,
-          alertMins: Number(t.alertMins||0), notes: t.notes||'', category: cat, done: !!t.done
-        }));
-      }catch{}
-    });
-    return merged;
+/* ===================== DATA ===================== */
+const KEY_CAL = 'unified_cal_tasks_v1';
+const KEY_WORK = 'list_work_v1';
+const KEY_SCHOOL = 'list_school_v1';
+const KEY_PERSONAL = 'list_personal_v1';
+
+const load = (k)=>{ try{return JSON.parse(localStorage.getItem(k))||[]}catch{return[]} };
+const save = (k,v)=> localStorage.setItem(k, JSON.stringify(v));
+
+let calTasks = load(KEY_CAL);
+let listWork = load(KEY_WORK);
+let listSchool = load(KEY_SCHOOL);
+let listPersonal = load(KEY_PERSONAL);
+
+/* mirror from calendar → list (work/school/personal) */
+function upsertMirrorFromCalendar(task, prevCategory){
+  const targetKey = (cat)=> cat==='work'?KEY_WORK : cat==='school'?KEY_SCHOOL : cat==='personal'?KEY_PERSONAL : null;
+  const removeFrom = (key,id)=>{
+    if(!key) return;
+    const arr = load(key).filter(i=> i.sourceId!==id);
+    save(key, arr);
+  };
+  /* if category changed, remove old mirror */
+  if(prevCategory && prevCategory!==task.category){
+    removeFrom(targetKey(prevCategory), task.id);
   }
-  function saveUnified(list){ localStorage.setItem(NEW_KEY, JSON.stringify(list)); }
+  const key = targetKey(task.category);
+  if(!key) return; // do not mirror event/teaching
+  let arr = load(key);
+  const idx = arr.findIndex(i=> i.sourceId===task.id);
+  const payload = {
+    id: idx>=0? arr[idx].id : Math.random().toString(36).slice(2,10),
+    title: task.title, date: task.date, time: task.time, notes: task.notes||'',
+    done: !!task.done, source:'calendar', sourceId: task.id
+  };
+  if(idx>=0) arr[idx] = payload; else arr.push(payload);
+  save(key, arr);
+}
+/* remove mirror when calendar item deleted */
+function removeMirrorForCalendar(task){
+  const key = task.category==='work'?KEY_WORK : task.category==='school'?KEY_SCHOOL : task.category==='personal'?KEY_PERSONAL : null;
+  if(!key) return;
+  const arr = load(key).filter(i=> i.sourceId!==task.id);
+  save(key, arr);
+}
 
-  // ---------- App state ----------
-  let tasks = loadUnified();
-  const selectedCats = new Set(['work','school','personal','event','teaching']);
+/* ===================== UTILS ===================== */
+function mkId(){ return Math.random().toString(36).slice(2,10) }
+function escapeHtml(s){ return s.replace(/[&<>\"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]) ) }
+const now = ()=>new Date();
+function startOfDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x }
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x }
+function fmtDay(d){ return d.toLocaleDateString(undefined,{weekday:'long'}) }
+function fmtDate(d){ return d.toLocaleDateString(undefined,{month:'short', day:'numeric'}) }
+function fmtDateFull(d){ return d.toLocaleDateString(undefined,{month:'short', day:'numeric', year:'numeric'}) }
 
-  // ---------- Utils ----------
-  const now = ()=>new Date();
-  function startOfDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x }
-  function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x }
-  function fmtDay(d){ return d.toLocaleDateString(undefined,{weekday:'long'}) }
-  function fmtDate(d){ return d.toLocaleDateString(undefined,{month:'short', day:'numeric'}) }
-  function fmtDateFull(d){ return d.toLocaleDateString(undefined,{month:'short', day:'numeric', year:'numeric'}) }
-  function escapeHtml(s){ return s.replace(/[&<>\"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]) ) }
-  function mkTask(title,category,date,time,alertMins=0,notes=''){
-    return { id:mkId(), title, category, date, time, alertMins:Number(alertMins||0), notes, done:false };
+/* ===================== ROUTER ===================== */
+let route = (location.hash.replace('#','') || 'calendar'); // 'calendar'|'work'|'school'|'personal'
+const nav = document.getElementById('navTabs');
+function setRoute(r){
+  route = r; location.hash = '#'+r;
+  nav.querySelectorAll('.btn').forEach(b=> b.classList.toggle('active', b.dataset.route===r));
+  // show/hide calendar blocks vs list block
+  const isCal = r==='calendar';
+  document.getElementById('calToolbar').style.display = isCal ? '' : 'none';
+  document.getElementById('daysGrid').style.display = isCal ? '' : 'none';
+  document.getElementById('monthView').style.display = (isCal && monthShowing)? '' : 'none';
+  document.getElementById('calFilterBox').style.display = isCal ? '' : 'none';
+  document.getElementById('listPage').style.display = isCal ? 'none' : '';
+  // quick actions visibility
+  document.getElementById('pdfBtn').style.display = isCal ? '' : 'none';
+  document.getElementById('rangeBtn').style.display = isCal ? '' : 'none';
+  // render correct view
+  if(isCal){ renderWeek(); if(monthShowing) renderMonth(); }
+  else { renderList(r); }
+}
+nav.addEventListener('click', (e)=>{ const b=e.target.closest('.btn'); if(!b) return; setRoute(b.dataset.route); });
+window.addEventListener('hashchange', ()=> setRoute(location.hash.replace('#','')||'calendar'));
+
+/* ===================== CALENDAR ===================== */
+const daysGrid = document.getElementById('daysGrid');
+let weekStart = startOfDay(new Date());
+
+/* calendar chips */
+const chipFilters = document.getElementById('chipFilters');
+const selectedCats = new Set(['work','school','personal','event','teaching']);
+chipFilters.addEventListener('click', (e)=>{
+  const c = e.target.closest('.chip'); if(!c) return;
+  const cat = c.dataset.cat;
+  if(selectedCats.has(cat)) selectedCats.delete(cat); else selectedCats.add(cat);
+  c.classList.toggle('active', selectedCats.has(cat));
+  renderWeek(); if(monthShowing) renderMonth();
+});
+
+function renderWeek(){
+  const start = weekStart;
+  daysGrid.innerHTML = '';
+  for(let i=0;i<7;i++){
+    const day = addDays(start,i);
+    const dateISO = day.toISOString().slice(0,10);
+    const dayTasks = calTasks
+      .filter(t => t.date===dateISO && selectedCats.has(t.category))
+      .sort((a,b)=> a.time.localeCompare(b.time));
+
+    const col = document.createElement('div');
+    col.className='card';
+    col.id = 'day-'+dateISO;
+
+    const isToday = startOfDay(new Date()).getTime()===startOfDay(day).getTime();
+    col.innerHTML = `
+      <div class="day-header">
+        <h3>${i===0? 'Today' : fmtDay(day)} <span style="color:var(--muted);font-weight:500">${fmtDate(day)}</span>${isToday?'<span class="today-chip">TODAY</span>':''}</h3>
+        <button class="ghost" data-add="${dateISO}">+ Add</button>
+      </div>
+      <div class="list ${dayTasks.length? '':'empty'}">
+        ${dayTasks.length? '' : '<div class="empty">No tasks yet</div>'}
+      </div>`;
+    if(isToday) col.classList.add('focus-day');
+
+    const listEl = col.querySelector('.list');
+    dayTasks.forEach(t=> listEl.appendChild(renderCalTask(t)) );
+    col.querySelector('[data-add]').onclick = (e)=> openCalEditor({date:e.target.dataset.add});
+    daysGrid.appendChild(col);
   }
+  updatePrintHeader();
+}
+function renderCalTask(t){
+  const wrap = document.createElement('div');
+  wrap.className='task';
+  const pillClass = {work:'p-work',school:'p-school',personal:'p-personal',event:'p-event',teaching:'p-teaching'}[t.category] || 'p-personal';
+  wrap.innerHTML = `
+    <div>
+      <div class="title">${escapeHtml(t.title)} <span class="pill ${pillClass}">${t.category}</span></div>
+      <div class="meta">${t.time} • ${t.notes? escapeHtml(t.notes): ''}</div>
+    </div>
+    <div class="actions">
+      <button class="icon" title="Done" data-done="${t.id}">✔</button>
+      <button class="icon" title="Edit" data-edit="${t.id}">✎</button>
+      <button class="icon" title="Delete" data-del="${t.id}">🗑</button>
+    </div>`;
+  wrap.querySelector('[data-done]').onclick = ()=>{ t.done=!t.done; save(KEY_CAL,calTasks); renderWeek(); if(monthShowing) renderMonth(); };
+  wrap.querySelector('[data-edit]').onclick = ()=> openCalEditor(t);
+  wrap.querySelector('[data-del]').onclick = ()=>{ if(confirm('Delete this item?')){ calTasks = calTasks.filter(x=>x.id!==t.id); save(KEY_CAL,calTasks); removeMirrorForCalendar(t); renderWeek(); if(monthShowing) renderMonth(); } };
+  if(t.done){ wrap.style.opacity=.6; wrap.style.textDecoration='line-through' }
+  return wrap;
+}
 
-  // ---------- Filters (chips) ----------
-  const chipFilters = document.getElementById('chipFilters');
-  chipFilters.addEventListener('click', (e)=>{
-    const c = e.target.closest('.chip'); if(!c) return;
-    const cat = c.dataset.cat;
-    if(selectedCats.has(cat)) selectedCats.delete(cat); else selectedCats.add(cat);
-    c.classList.toggle('active', selectedCats.has(cat));
-    render(); renderMonth();
-  });
+/* month */
+const monthBtn = document.getElementById('monthBtn');
+const monthView = document.getElementById('monthView');
+const monthTitle = document.getElementById('monthTitle');
+const calendarGrid = document.getElementById('calendarGrid');
+let monthCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+let monthShowing = false;
 
-  // ---------- Week view ----------
-  const daysGrid = document.getElementById('daysGrid');
-  let weekStart = startOfDay(new Date());
-
-  function render(){
-    const start = weekStart;
-    daysGrid.innerHTML = '';
-    for(let i=0;i<7;i++){
-      const day = addDays(start,i);
-      const dateISO = day.toISOString().slice(0,10);
-      const dayTasks = tasks
-        .filter(t => t.date===dateISO && selectedCats.has(t.category))
-        .sort((a,b)=> a.time.localeCompare(b.time));
-
-      const col = document.createElement('div');
-      col.className='card';
-      col.id = 'day-'+dateISO;
-
-      const isToday = startOfDay(new Date()).getTime()===startOfDay(day).getTime();
-      col.innerHTML = `
-        <div class="day-header">
-          <h3>${i===0? 'Today' : fmtDay(day)} <span style="color:var(--muted);font-weight:500">${fmtDate(day)}</span>${isToday?'<span class="today-chip">TODAY</span>':''}</h3>
-          <button class="ghost" data-add="${dateISO}">+ Add</button>
-        </div>
-        <div class="list ${dayTasks.length? '':'empty'}">
-          ${dayTasks.length? '' : '<div class="empty">No tasks yet</div>'}
-        </div>`;
-      if(isToday) col.classList.add('focus-day');
-
-      const listEl = col.querySelector('.list');
-      dayTasks.forEach(t=> listEl.appendChild(renderTask(t)) );
-      col.querySelector('[data-add]').onclick = (e)=> openEditor({date:e.target.dataset.add});
-      daysGrid.appendChild(col);
-    }
-    updatePrintHeader();
+function renderMonth(){
+  monthTitle.textContent = 'Calendar — ' + monthCursor.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  calendarGrid.innerHTML = '';
+  const firstDow = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1).getDay();
+  const daysIn = new Date(monthCursor.getFullYear(), monthCursor.getMonth()+1, 0).getDate();
+  for(let i=0;i<firstDow;i++) calendarGrid.appendChild(document.createElement('div'));
+  const todayISO = startOfDay(new Date()).toISOString().slice(0,10);
+  for(let d=1; d<=daysIn; d++){
+    const dt = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), d);
+    const dateISO = dt.toISOString().slice(0,10);
+    const count = calTasks.filter(t=> t.date===dateISO && selectedCats.has(t.category)).length;
+    const cell = document.createElement('div');
+    cell.className='daycell';
+    if(dateISO===todayISO) cell.classList.add('month-today');
+    const top = document.createElement('div'); top.style.display='flex'; top.style.alignItems='center'; top.style.gap='6px';
+    const dn  = document.createElement('div'); dn.className='daynum'; dn.textContent=d;
+    const ct  = document.createElement('div'); ct.className='count'; ct.textContent = count>0? String(count): '';
+    top.appendChild(dn); top.appendChild(ct);
+    cell.appendChild(top);
+    cell.title = 'Add on '+dateISO;
+    cell.onclick = ()=> openCalEditor({date:dateISO});
+    calendarGrid.appendChild(cell);
   }
+}
+document.getElementById('prevMonth').onclick = ()=>{ monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth()-1, 1); renderMonth(); };
+document.getElementById('nextMonth').onclick = ()=>{ monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth()+1, 1); renderMonth(); };
+monthBtn.onclick = ()=>{
+  monthShowing = !monthShowing;
+  monthView.style.display = monthShowing ? '' : 'none';
+  if(monthShowing) renderMonth();
+};
 
-  function renderTask(t){
-    const wrap = document.createElement('div');
-    wrap.className='task';
-    const pillClass = {work:'p-work',school:'p-school',personal:'p-personal',event:'p-event',teaching:'p-teaching'}[t.category] || 'p-personal';
-    wrap.innerHTML = `
+/* calendar dialog */
+const edCal = document.getElementById('editorCal');
+const cTitle = document.getElementById('cTitle');
+const cDate  = document.getElementById('cDate');
+const cTime  = document.getElementById('cTime');
+const cCat   = document.getElementById('cCat');
+const cAlert = document.getElementById('cAlert');
+const cNotes = document.getElementById('cNotes');
+let editIdCal = null, prevCatCal = null;
+
+edCal.addEventListener('close', ()=> document.body.classList.remove('modal-open'));
+
+function openCalEditor(seed={}){
+  editIdCal = seed.id || null;
+  prevCatCal = seed.category || null;
+  cTitle.value = seed.title || '';
+  cDate.value  = seed.date || new Date().toISOString().slice(0,10);
+  cTime.value  = seed.time || new Date().toTimeString().slice(0,5);
+  cCat.value   = seed.category || 'personal';
+  cAlert.value = (seed.alertMins ?? 0);
+  cNotes.value = seed.notes || '';
+  edCal.showModal(); document.body.classList.add('modal-open');
+}
+document.getElementById('newBtn').onclick = ()=> openCalEditor({});
+document.getElementById('newBtnTop').onclick = ()=> openCalEditor({});
+document.getElementById('cCancel').onclick = (e)=>{ e.preventDefault(); edCal.close(); };
+
+document.getElementById('cSave').addEventListener('click', (e)=>{
+  e.preventDefault();
+  const data = {
+    title: cTitle.value.trim(), date:cDate.value, time:cTime.value,
+    category:cCat.value, alertMins:Number(cAlert.value||0), notes:cNotes.value.trim()
+  };
+  if(!data.title) return;
+  if(editIdCal){
+    const idx = calTasks.findIndex(x=>x.id===editIdCal);
+    calTasks[idx] = { ...calTasks[idx], ...data };
+    save(KEY_CAL, calTasks);
+    upsertMirrorFromCalendar(calTasks[idx], prevCatCal);
+  }else{
+    const t = { id: mkId(), done:false, ...data };
+    calTasks.push(t); save(KEY_CAL, calTasks);
+    upsertMirrorFromCalendar(t, null);
+  }
+  edCal.close(); renderWeek(); if(monthShowing) renderMonth(); scheduleAll();
+});
+
+/* Jump to Today */
+document.getElementById('todayBtn').onclick = ()=>{
+  weekStart = startOfDay(new Date());
+  monthCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  renderWeek();
+  const iso = weekStart.toISOString().slice(0,10);
+  const el = document.getElementById('day-'+iso);
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+  if(monthShowing) renderMonth();
+};
+
+/* PDF buttons */
+const pdfBtn = document.getElementById('pdfBtn');
+pdfBtn.onclick = ()=>{ updatePrintHeader(); window.print(); };
+function updatePrintHeader(){
+  const header = document.getElementById('printHeader');
+  const start = startOfDay(weekStart);
+  const end = addDays(start,6);
+  header.textContent = `Schedule — ${fmtDateFull(start)} – ${fmtDateFull(end)}`;
+}
+
+/* Export range → PDF */
+const rangeDlg = document.getElementById('rangePicker');
+const rangeBtn = document.getElementById('rangeBtn');
+const rangeCancel = document.getElementById('rangeCancel');
+const rStart = document.getElementById('rStart');
+const rEnd   = document.getElementById('rEnd');
+const rangeExportBtn = document.getElementById('rangeExportBtn');
+const printRange = document.getElementById('printRange');
+rangeDlg.addEventListener('close', ()=> document.body.classList.remove('modal-open'));
+rangeBtn.onclick = ()=>{
+  const t=new Date(), e=new Date(t); e.setDate(e.getDate()+6);
+  const iso=d=>d.toISOString().slice(0,10); rStart.value=iso(t); rEnd.value=iso(e);
+  rangeDlg.showModal(); document.body.classList.add('modal-open');
+};
+rangeCancel.onclick = (e)=>{ e.preventDefault(); rangeDlg.close(); };
+rangeExportBtn.addEventListener('click', (e)=>{
+  e.preventDefault();
+  if(!rStart.value || !rEnd.value) return;
+  const s=new Date(rStart.value), ee=new Date(rEnd.value);
+  if(s>ee){ alert('Start must be before End'); return; }
+  rangeDlg.close(); renderPrintRange(rStart.value, rEnd.value); document.body.classList.add('range-print'); window.print();
+});
+window.addEventListener('afterprint', ()=>{ document.body.classList.remove('range-print'); printRange.style.display='none'; printRange.innerHTML=''; });
+function renderPrintRange(startISO, endISO){
+  const s=new Date(startISO), e=new Date(endISO), iso=d=>d.toISOString().slice(0,10);
+  let html = `<h3 style="margin:0 0 8px">Schedule — ${fmtDateFull(s)} to ${fmtDateFull(e)}</h3>`;
+  let any=false;
+  for(let dt=new Date(s); dt<=e; dt.setDate(dt.getDate()+1)){
+    const key=iso(dt);
+    const dayList = calTasks.filter(t=> t.date===key && selectedCats.has(t.category)).sort((a,b)=> a.time.localeCompare(b.time));
+    if(dayList.length===0) continue;
+    any=true;
+    html += `<div class="card" style="margin-top:8px;padding:12px">
+      <div style="font-weight:700;margin-bottom:6px">${dt.toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'})}</div>
+      ${dayList.map(t=>`
+        <div style="display:flex;gap:8px;align-items:flex-start;margin:6px 0">
+          <div style="min-width:64px">${t.time}</div>
+          <div>
+            <div style="font-weight:600">${escapeHtml(t.title)} <span style="font-size:11px;opacity:.7">[${t.category}]</span></div>
+            <div style="color:#666">${t.notes? escapeHtml(t.notes): ''}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  }
+  if(!any) html += `<div class="card" style="margin-top:8px;padding:12px;color:#666">No items in this range.</div>`;
+  printRange.innerHTML = html; printRange.style.display='block';
+}
+
+/* ===================== LIST PAGES ===================== */
+const listPage = document.getElementById('listPage');
+const listWrap = document.getElementById('listWrap');
+const listTitle= document.getElementById('listTitle');
+document.getElementById('listAddBtn').onclick = ()=> openListEditor({});
+
+function renderList(kind){ // 'work' | 'school' | 'personal'
+  listTitle.textContent = {work:'Work', school:'School', personal:'Personal'}[kind] + ' — List';
+  listWrap.innerHTML = '';
+  const arr = kind==='work'? load(KEY_WORK) : kind==='school'? load(KEY_SCHOOL) : load(KEY_PERSONAL);
+  arr.sort((a,b)=> (a.date||'')+(a.time||'') > (b.date||'')+(b.time||'') ? 1 : -1);
+  if(arr.length===0){ listWrap.innerHTML = `<div class="empty">No items yet</div>`; return; }
+  arr.forEach(item=>{
+    const row = document.createElement('div');
+    row.className='list-item';
+    row.innerHTML = `
       <div>
-        <div class="title">${escapeHtml(t.title)} <span class="pill ${pillClass}">${t.category}</span></div>
-        <div class="meta">${t.time} • ${t.notes? escapeHtml(t.notes): ''}</div>
+        <div class="title" style="font-weight:700">${escapeHtml(item.title)} ${item.source==='calendar'?'<span class="pill p-'+kind+'">from calendar</span>':''}</div>
+        <div class="meta">${item.date? item.date : ''} ${item.time? ('• '+item.time): ''} ${item.notes? ('• '+escapeHtml(item.notes)) : ''}</div>
       </div>
       <div class="actions">
-        <button class="icon" title="Done" data-done="${t.id}">✔</button>
-        <button class="icon" title="Edit" data-edit="${t.id}">✎</button>
-        <button class="icon" title="Delete" data-del="${t.id}">🗑</button>
+        <button class="icon" data-done="${item.id}">✔</button>
+        ${item.source==='calendar' ? '' : '<button class="icon" data-edit="'+item.id+'">✎</button>'}
+        <button class="icon" data-del="${item.id}">🗑</button>
       </div>`;
-    wrap.querySelector('[data-done]').onclick = ()=>{ t.done=!t.done; saveUnified(tasks); render(); renderMonth(); };
-    wrap.querySelector('[data-edit]').onclick = ()=> openEditor(t);
-    wrap.querySelector('[data-del]').onclick = ()=>{ if(confirm('Delete this item?')){ tasks = tasks.filter(x=>x.id!==t.id); saveUnified(tasks); render(); renderMonth(); } };
-    if(t.done){ wrap.style.opacity=.6; wrap.style.textDecoration='line-through' }
-    return wrap;
-  }
-
-  // ---------- Month view ----------
-  const monthBtn = document.getElementById('monthBtn');
-  const monthView = document.getElementById('monthView');
-  const monthTitle = document.getElementById('monthTitle');
-  const calendarGrid = document.getElementById('calendarGrid');
-  let monthCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-
-  function renderMonth(){
-    monthTitle.textContent = 'Calendar — ' + monthCursor.toLocaleDateString(undefined,{month:'long',year:'numeric'});
-    calendarGrid.innerHTML = '';
-
-    const firstDow = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1).getDay();
-    const daysIn = new Date(monthCursor.getFullYear(), monthCursor.getMonth()+1, 0).getDate();
-    for(let i=0;i<firstDow;i++) calendarGrid.appendChild(document.createElement('div'));
-
-    const todayISO = startOfDay(new Date()).toISOString().slice(0,10);
-
-    for(let d=1; d<=daysIn; d++){
-      const dt = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), d);
-      const dateISO = dt.toISOString().slice(0,10);
-      const count = tasks.filter(t=> t.date===dateISO && selectedCats.has(t.category)).length;
-
-      const cell = document.createElement('div');
-      cell.className='daycell';
-      if(dateISO===todayISO) cell.classList.add('month-today');
-
-      const top = document.createElement('div'); top.style.display='flex'; top.style.alignItems='center'; top.style.gap='6px';
-      const dn  = document.createElement('div'); dn.className='daynum'; dn.textContent=d;
-      const ct  = document.createElement('div'); ct.className='count'; ct.textContent = count>0? String(count): '';
-      top.appendChild(dn); top.appendChild(ct);
-      cell.appendChild(top);
-
-      cell.title = 'Add item on '+dateISO;
-      cell.onclick = ()=> openEditor({date:dateISO});  // click 17 → open prefilled
-
-      calendarGrid.appendChild(cell);
-    }
-  }
-
-  document.getElementById('prevMonth').onclick = ()=>{ monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth()-1, 1); renderMonth(); };
-  document.getElementById('nextMonth').onclick = ()=>{ monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth()+1, 1); renderMonth(); };
-  monthBtn.onclick = ()=>{
-    const showing = monthView.style.display!=='none';
-    monthView.style.display = showing ? 'none' : 'block';
-    if(!showing) renderMonth();
-  };
-
-  // ---------- Dialogs / Save ----------
-  const dlg = document.getElementById('editor');
-  const cancelBtn = document.getElementById('cancelBtn');
-  const fTitle = document.getElementById('fTitle');
-  const fDate  = document.getElementById('fDate');
-  const fTime  = document.getElementById('fTime');
-  const fCat   = document.getElementById('fCat');
-  const fAlert = document.getElementById('fAlert');
-  const fNotes = document.getElementById('fNotes');
-  let editingId = null;
-
-  dlg.addEventListener('close', ()=> document.body.classList.remove('modal-open'));
-
-  function openEditor(seed={}){
-    editingId = seed.id || null;
-    fTitle.value = seed.title || '';
-    fDate.value  = seed.date || new Date().toISOString().slice(0,10);
-    fTime.value  = seed.time || new Date().toTimeString().slice(0,5);
-    fCat.value   = seed.category || 'personal';
-    fAlert.value = (seed.alertMins ?? 0);
-    fNotes.value = seed.notes || '';
-    dlg.showModal();
-    document.body.classList.add('modal-open');
-  }
-  document.getElementById('newBtn').onclick = ()=> openEditor({});
-  document.getElementById('newBtnTop').onclick = ()=> openEditor({});
-  cancelBtn.onclick = (e)=>{ e.preventDefault(); dlg.close(); };
-
-  document.getElementById('saveBtn').addEventListener('click', (e)=>{
-    e.preventDefault();
-    const data = {
-      title: fTitle.value.trim(),
-      date:  fDate.value,
-      time:  fTime.value,
-      category: fCat.value,
-      alertMins: Number(fAlert.value||0),
-      notes: fNotes.value.trim()
-    };
-    if(!data.title) return;
-    if(editingId){
-      const idx = tasks.findIndex(x=>x.id===editingId);
-      tasks[idx] = { ...tasks[idx], ...data };
-    } else {
-      tasks.push(mkTask(data.title, data.category, data.date, data.time, data.alertMins, data.notes));
-    }
-    saveUnified(tasks); dlg.close(); render(); renderMonth(); scheduleAll();
+    row.querySelector('[data-done]').onclick = ()=>{ item.done=!item.done; saveList(kind, replaceIn(arr,item)); renderList(kind); };
+    const editBtn = row.querySelector('[data-edit]');
+    if(editBtn) editBtn.onclick = ()=> openListEditor(item, kind);
+    row.querySelector('[data-del]').onclick = ()=>{ if(confirm('Delete this item?')){ const out=arr.filter(x=>x.id!==item.id); saveList(kind,out); renderList(kind);} };
+    if(item.done){ row.style.opacity=.6; row.style.textDecoration='line-through' }
+    listWrap.appendChild(row);
   });
+}
+function saveList(kind, arr){
+  const k = kind==='work'?KEY_WORK : kind==='school'?KEY_SCHOOL : KEY_PERSONAL;
+  save(k, arr);
+}
+function replaceIn(arr, item){
+  const idx = arr.findIndex(x=>x.id===item.id); const copy=[...arr]; copy[idx]=item; return copy;
+}
 
-  // ---------- Jump to Today ----------
-  document.getElementById('todayBtn').onclick = ()=>{
-    weekStart = startOfDay(new Date());
-    monthCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    render();
-    const iso = weekStart.toISOString().slice(0,10);
-    const el = document.getElementById('day-'+iso);
-    window.scrollTo({top:0,behavior:'smooth'});
-    if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
-    if(monthView.style.display!=='none') renderMonth();
-  };
-
-  // ---------- PDF (this week) ----------
-  const pdfBtn = document.getElementById('pdfBtn');
-  if(pdfBtn){ pdfBtn.onclick = ()=> { updatePrintHeader(); window.print(); }; }
-  function updatePrintHeader(){
-    const header = document.getElementById('printHeader');
-    const start = startOfDay(weekStart);
-    const end = addDays(start,6);
-    header.textContent = `Schedule — ${fmtDateFull(start)} – ${fmtDateFull(end)}`;
+/* list dialog */
+const edList = document.getElementById('editorList');
+const lTitle = document.getElementById('lTitle');
+const lDate  = document.getElementById('lDate');
+const lTime  = document.getElementById('lTime');
+const lNotes = document.getElementById('lNotes');
+let editIdList=null, listKind='work';
+edList.addEventListener('close', ()=> document.body.classList.remove('modal-open'));
+function openListEditor(seed={}, kind=route){
+  listKind = kind;
+  editIdList = seed.id || null;
+  lTitle.value = seed.title || '';
+  lDate.value  = seed.date || '';
+  lTime.value  = seed.time || '';
+  lNotes.value = seed.notes || '';
+  edList.showModal(); document.body.classList.add('modal-open');
+}
+document.getElementById('lCancel').onclick = (e)=>{ e.preventDefault(); edList.close(); };
+document.getElementById('lSave').addEventListener('click', (e)=>{
+  e.preventDefault();
+  const data = { title:lTitle.value.trim(), date:lDate.value||'', time:lTime.value||'', notes:lNotes.value.trim(), done:false, source:'board' };
+  if(!data.title) return;
+  const key = listKind==='work'?KEY_WORK : listKind==='school'?KEY_SCHOOL : KEY_PERSONAL;
+  let arr = load(key);
+  if(editIdList){
+    const idx = arr.findIndex(x=>x.id===editIdList);
+    arr[idx] = { ...arr[idx], ...data };
+  }else{
+    arr.push({ id: mkId(), ...data });
   }
+  save(key, arr); edList.close(); renderList(listKind);
+});
 
-  // ---------- Export range → PDF ----------
-  const rangeDlg = document.getElementById('rangePicker');
-  const rangeBtn = document.getElementById('rangeBtn');
-  const rangeCancel = document.getElementById('rangeCancel');
-  const rStart = document.getElementById('rStart');
-  const rEnd   = document.getElementById('rEnd');
-  const rangeExportBtn = document.getElementById('rangeExportBtn');
-  const printRange = document.getElementById('printRange');
+/* ===================== COMMON BUTTONS ===================== */
+document.getElementById('newBtnTop').style.display = ''; // calendar add
+document.getElementById('newBtn').onclick = ()=>{
+  if(route==='calendar') openCalEditor({});
+  else openListEditor({}, route);
+};
 
-  rangeDlg.addEventListener('close', ()=> document.body.classList.remove('modal-open'));
+/* ===================== NOTIFICATIONS ===================== */
+async function ensurePermission(){ if(!('Notification' in window)) return false; if(Notification.permission==='granted') return true; if(Notification.permission!=='denied'){ const p = await Notification.requestPermission(); return p==='granted'; } return false; }
+function whenToNotify(task){ const dt = new Date(task.date + 'T' + task.time + ':00'); return dt.getTime() - (task.alertMins||0)*60000; }
+let timers = []; function clearTimers(){ timers.forEach(clearTimeout); timers=[] }
+function scheduleAll(){ clearTimers(); ensurePermission(); const nowMs=Date.now(); calTasks.forEach(t=>{ const fireAt=whenToNotify(t); if(fireAt>nowMs){ timers.push(setTimeout(()=>fireNotify(t), fireAt-nowMs)); } }); }
+function fireNotify(t){ try{ if('Notification' in window && Notification.permission==='granted'){ const n = new Notification(t.title,{ body: `${t.time} • ${t.category}${t.notes? ' • '+t.notes:''}` }); setTimeout(()=> n.close(), 8000);} else { alert(`[Reminder] ${t.title} @ ${t.time}`)} }catch(e){ console.warn(e)} }
 
-  rangeBtn.onclick = ()=>{
-    const t = new Date(); const iso=(d)=>d.toISOString().slice(0,10);
-    const e = new Date(t); e.setDate(e.getDate()+6);
-    rStart.value = iso(t); rEnd.value = iso(e);
-    rangeDlg.showModal(); document.body.classList.add('modal-open');
-  };
-  rangeCancel.onclick = (e)=>{ e.preventDefault(); rangeDlg.close(); };
+/* ===================== SEED (calendar) ===================== */
+if(calTasks.length===0){
+  const today=new Date(); const iso=d=>d.toISOString().slice(0,10);
+  const d1=new Date(today); d1.setDate(d1.getDate()+1); d1.setHours(18,30,0,0);
+  const d2=new Date(today); d2.setDate(d2.getDate()+5); d2.setHours(19,0,0,0);
+  calTasks=[
+    {id:mkId(),title:'Study BBU',category:'school',date:iso(d1),time:d1.toTimeString().slice(0,5),alertMins:0,notes:'Focus on DB hw',done:false},
+    {id:mkId(),title:'C# class', category:'school',date:iso(d2),time:d2.toTimeString().slice(0,5),alertMins:0,notes:'re class',done:false}
+  ];
+  save(KEY_CAL,calTasks);
+  calTasks.forEach(t=> upsertMirrorFromCalendar(t,null));
+}
 
-  rangeExportBtn.addEventListener('click', (e)=>{
-    e.preventDefault();
-    if(!rStart.value || !rEnd.value) return;
-    const s = new Date(rStart.value); const eDate = new Date(rEnd.value);
-    if(s > eDate){ alert('Start date must be before End date'); return; }
-    rangeDlg.close();
-    renderPrintRange(rStart.value, rEnd.value);
-    document.body.classList.add('range-print');
-    window.print();
-  });
-
-  window.addEventListener('afterprint', ()=>{
-    document.body.classList.remove('range-print');
-    printRange.style.display = 'none';
-    printRange.innerHTML = '';
-  });
-
-  function renderPrintRange(startISO, endISO){
-    const s = new Date(startISO); const e = new Date(endISO);
-    const iso = (d)=>d.toISOString().slice(0,10);
-    let html = `<h3 style="margin:0 0 8px">Schedule — ${fmtDateFull(s)} to ${fmtDateFull(e)}</h3>`;
-    let any = false;
-    for(let dt = new Date(s); dt <= e; dt.setDate(dt.getDate()+1)){
-      const key = iso(dt);
-      const dayList = tasks
-        .filter(t=> t.date===key && selectedCats.has(t.category))
-        .sort((a,b)=> a.time.localeCompare(b.time));
-      if(dayList.length===0) continue;
-      any = true;
-      html += `<div class="card" style="margin-top:8px;padding:12px">
-        <div style="font-weight:700;margin-bottom:6px">${dt.toLocaleDateString(undefined,{weekday:'bold',month:'short',day:'numeric'})}</div>
-        ${dayList.map(t=>`
-          <div style="display:flex;gap:8px;align-items:flex-start;margin:6px 0">
-            <div style="min-width:64px">${t.time}</div>
-            <div>
-              <div style="font-weight:600">${escapeHtml(t.title)} <span style="font-size:11px;opacity:.7">[${t.category}]</span></div>
-              <div style="color:#666">${t.notes? escapeHtml(t.notes): ''}</div>
-            </div>
-          </div>
-        `).join('')}
-      </div>`;
-    }
-    if(!any){ html += `<div class="card" style="margin-top:8px;padding:12px;color:#666">No items in this range.</div>`; }
-    printRange.innerHTML = html;
-    printRange.style.display = 'block';
-  }
-
-  // ---------- Notifications ----------
-  async function ensurePermission(){ if(!('Notification' in window)) return false; if(Notification.permission==='granted') return true; if(Notification.permission!=='denied'){ const p = await Notification.requestPermission(); return p==='granted'; } return false; }
-  function whenToNotify(task){ const dt = new Date(task.date + 'T' + task.time + ':00'); return dt.getTime() - (task.alertMins||0)*60000; }
-  let timers = []; function clearTimers(){ timers.forEach(clearTimeout); timers=[] }
-  function scheduleAll(){ clearTimers(); ensurePermission(); const nowMs=Date.now(); tasks.forEach(t=>{ const fireAt=whenToNotify(t); if(fireAt>nowMs){ timers.push(setTimeout(()=>fireNotify(t), fireAt-nowMs)); } }); }
-  function fireNotify(t){ try{ if('Notification' in window && Notification.permission==='granted'){ const n = new Notification(t.title,{ body: `${t.time} • ${t.category}${t.notes? ' • '+t.notes:''}` }); setTimeout(()=> n.close(), 8000);} else { alert(`[Reminder] ${t.title} @ ${t.time}`)} }catch(e){ console.warn(e)} }
-
-  // ---------- Seed if empty ----------
-  if(tasks.length===0){
-    const today=new Date(); const iso=d=>d.toISOString().slice(0,10);
-    const d1=new Date(today); d1.setDate(d1.getDate()+1); d1.setHours(18,30,0,0);
-    const d2=new Date(today); d2.setDate(d2.getDate()+5); d2.setHours(19,0,0,0);
-    tasks=[
-      mkTask('Study BBU','school', iso(d1), d1.toTimeString().slice(0,5), 0, 'Focus on DB hw'),
-      mkTask('C# class','school', iso(d2), d2.toTimeString().slice(0,5), 0, 're class')
-    ];
-    saveUnified(tasks);
-  }
-
-  // ---------- Boot ----------
-  render(); renderMonth(); scheduleAll();
+/* ===================== BOOT ===================== */
+renderWeek(); scheduleAll();
+setRoute(route);
 </script>
 </body>
 </html>
