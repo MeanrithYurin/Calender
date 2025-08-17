@@ -62,14 +62,16 @@
     input,select,textarea{width:100%;padding:10px;border-radius:10px;background:#0f131a;border:1px solid #243047;color:var(--text)}
     .footer{display:flex;gap:10px;justify-content:flex-end;margin-top:6px}
     .empty{color:var(--muted);font-size:13px;padding:6px}
-      /* personal branding + subtle code grid */
-    body::after{content:"";position:fixed;inset:0;pointer-events:none;background-image:
-      linear-gradient(to right, rgba(255,255,255,.03) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255,255,255,.03) 1px, transparent 1px),
-      radial-gradient(1000px 600px at 80% -10%, rgba(124,92,255,.15), transparent 60%);
-      background-size:24px 24px,24px 24px,auto;z-index:0}
-    body::before{content:"MEANRITH YURIN";position:fixed;top:10px;right:16px;font-weight:900;letter-spacing:.2em;color:rgba(255,255,255,.06);font-size:clamp(20px,4vw,44px);pointer-events:none;z-index:0}
-      /* Print styles */
+
+    /* Month view */
+    .month-head{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;color:var(--muted);font-size:12px;margin:6px 0}
+    .month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+    .daycell{background:#10131a;border:1px solid #232a39;border-radius:12px;padding:8px;min-height:72px;display:flex;flex-direction:column;gap:6px;cursor:pointer}
+    .daycell:hover{border-color:#35405a}
+    .daynum{font-weight:700;color:var(--text);opacity:.9}
+    .count{margin-left:auto;font-size:11px;padding:2px 6px;border-radius:999px;background:#0d1017;border:1px solid #242b3a;color:var(--muted)}
+
+    /* Print styles */
     .print-header{display:none}
     @media print{
       body{background:#fff !important;color:#111 !important}
@@ -81,6 +83,14 @@
       .print-header{display:block;margin-bottom:12px}
       .card{break-inside:avoid;page-break-inside:avoid}
     }
+
+    /* branding */
+    body::after{content:"";position:fixed;inset:0;pointer-events:none;background-image:
+      linear-gradient(to right, rgba(255,255,255,.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,.03) 1px, transparent 1px),
+      radial-gradient(1000px 600px at 80% -10%, rgba(124,92,255,.15), transparent 60%);
+      background-size:24px 24px,24px 24px,auto;z-index:0}
+    body::before{content:"MEANRITH YURIN";position:fixed;top:10px;right:16px;font-weight:900;letter-spacing:.2em;color:rgba(255,255,255,.06);font-size:clamp(20px,4vw,44px);pointer-events:none;z-index:0}
   </style>
 </head>
 <body>
@@ -98,7 +108,6 @@
         <label class="chip"><input type="checkbox" data-cat="school" checked/> <span class="legend" style="background:var(--school)"></span> School</label>
         <label class="chip"><input type="checkbox" data-cat="event" checked/> <span class="legend" style="background:var(--event)"></span> Event</label>
         <label class="chip"><input type="checkbox" data-cat="personal" checked/> <span class="legend" style="background:var(--personal)"></span> Personal</label>
-      
         <label class="chip"><input type="checkbox" data-cat="teaching" checked/> <span class="legend" style="background:var(--accent)"></span> Teaching</label>
       </div>
       <div class="section-title">Quick Actions</div>
@@ -119,10 +128,22 @@
 
       <div id="printHeader" class="print-header card"></div>
 
+      <!-- Week -->
       <div class="grid" id="daysGrid"></div>
+
+      <!-- Month -->
       <div class="card" id="monthView" style="display:none">
-        <h3>Month Calendar</h3>
-        <div id="calendarGrid"></div>
+        <div class="day-header">
+          <h3 id="monthTitle">Month</h3>
+          <div>
+            <button class="ghost" id="prevMonth">◀</button>
+            <button class="ghost" id="nextMonth">▶</button>
+          </div>
+        </div>
+        <div class="month-head">
+          <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+        </div>
+        <div class="month-grid" id="calendarGrid"></div>
       </div>
     </main>
   </div>
@@ -180,7 +201,7 @@
     </form>
   </dialog>
 
-    <script>
+  <script>
     const LS_KEY = 'my_week_tasks_v1';
     function loadTasks(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)) || [] }catch{ return [] } }
     function saveTasks(list){ localStorage.setItem(LS_KEY, JSON.stringify(list)) }
@@ -201,10 +222,10 @@
 
     let editingId = null;
     const fTitle = document.getElementById('fTitle');
-    const fDate = document.getElementById('fDate');
-    const fTime = document.getElementById('fTime');
-    const fCat = document.getElementById('fCat');
-    const fCal = document.getElementById('fCalendar');
+    const fDate  = document.getElementById('fDate');
+    const fTime  = document.getElementById('fTime');
+    const fCat   = document.getElementById('fCat');
+    const fCal   = document.getElementById('fCalendar');
     const fAlert = document.getElementById('fAlert');
     const fNotes = document.getElementById('fNotes');
 
@@ -219,6 +240,7 @@
     function getCatFilters(){ return Array.from(filterContainer.querySelectorAll('input[type="checkbox"]')).filter(c=>c.checked).map(c=>c.dataset.cat); }
     function getCalFilters(){ return Array.from(calFilters.querySelectorAll('input[type="checkbox"]')).filter(c=>c.checked).map(c=>c.dataset.cal); }
 
+    // Week render
     function render(){
       const cats = getCatFilters();
       const cals = getCalFilters();
@@ -263,9 +285,9 @@
           <button class="icon" title="Edit" data-edit="${t.id}">✎</button>
           <button class="icon" title="Delete" data-del="${t.id}">🗑</button>
         </div>`;
-      wrap.querySelector('[data-done]').onclick = ()=>{ t.done = !t.done; saveTasks(tasks); render(); };
+      wrap.querySelector('[data-done]').onclick = ()=>{ t.done = !t.done; saveTasks(tasks); render(); renderMonth(); };
       wrap.querySelector('[data-edit]').onclick = ()=> openEditor(t);
-      wrap.querySelector('[data-del]').onclick = ()=>{ if(confirm('Delete this item?')){ tasks = tasks.filter(x=>x.id!==t.id); saveTasks(tasks); render(); } };
+      wrap.querySelector('[data-del]').onclick = ()=>{ if(confirm('Delete this item?')){ tasks = tasks.filter(x=>x.id!==t.id); saveTasks(tasks); render(); renderMonth(); } };
       if(t.done){ wrap.style.opacity=.6; wrap.style.textDecoration='line-through' }
       return wrap;
     }
@@ -286,45 +308,66 @@
 
     document.getElementById('newBtn').onclick = ()=> openEditor({});
     document.getElementById('newBtnTop').onclick = ()=> openEditor({});
-    document.getElementById('todayBtn').onclick = ()=> window.scrollTo({top:0,behavior:'smooth'});
+
+    // PDF
     const pdfBtn = document.getElementById('pdfBtn');
     if(pdfBtn){ pdfBtn.onclick = ()=> { updatePrintHeader(); window.print(); }; }
 
-    // Month toggle (simple month grid)
+    // Month view logic
     const monthBtn = document.getElementById('monthBtn');
     const monthView = document.getElementById('monthView');
     const calendarGrid = document.getElementById('calendarGrid');
-    if(monthBtn){
-      monthBtn.onclick = ()=>{
-        const showing = monthView.style.display !== 'none';
-        monthView.style.display = showing ? 'none' : 'block';
-        if(!showing) renderMonthSimple();
-      }
-    }
-    function renderMonthSimple(){
-      if(!calendarGrid) return;
-      const base = new Date(now().getFullYear(), now().getMonth(), 1);
-      const firstDow = base.getDay();
-      const daysIn = new Date(base.getFullYear(), base.getMonth()+1, 0).getDate();
-      calendarGrid.innerHTML='';
-      calendarGrid.style.display='grid';
-      calendarGrid.style.gridTemplateColumns='repeat(7, minmax(0,1fr))';
-      calendarGrid.style.gap='6px';
+    const monthTitle = document.getElementById('monthTitle');
+    const prevMonthBtn = document.getElementById('prevMonth');
+    const nextMonthBtn = document.getElementById('nextMonth');
+    let monthCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+    function renderMonth(){
+      if(!monthView) return;
+      const cats = getCatFilters();
+      const cals = getCalFilters();
+
+      monthTitle.textContent = monthCursor.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+      calendarGrid.innerHTML = '';
+
+      const firstDow = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1).getDay();
+      const daysIn = new Date(monthCursor.getFullYear(), monthCursor.getMonth()+1, 0).getDate();
+
       for(let i=0;i<firstDow;i++){ calendarGrid.appendChild(document.createElement('div')); }
+
       for(let d=1; d<=daysIn; d++){
-        const dt = new Date(base.getFullYear(), base.getMonth(), d);
+        const dt = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), d);
         const dateISO = dt.toISOString().slice(0,10);
-        const count = tasks.filter(t=> t.date===dateISO).length;
+        const count = tasks.filter(t=> t.date===dateISO && cats.includes(t.category) && cals.includes(t.calendar||'main')).length;
+
         const cell = document.createElement('div');
-        cell.className='card';
-        cell.style.padding='8px';
-        cell.style.cursor='pointer';
-        cell.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><strong>${d}</strong><span style="font-size:12px;color:var(--muted)">${count?count:''}</span></div>`;
+        cell.className='daycell';
+        const top = document.createElement('div'); top.style.display='flex'; top.style.alignItems='center'; top.style.gap='6px';
+        const dn = document.createElement('div'); dn.className='daynum'; dn.textContent=d;
+        const ct = document.createElement('div'); ct.className='count'; ct.textContent = count>0? String(count): '';
+        top.appendChild(dn); top.appendChild(ct);
+        cell.appendChild(top);
         cell.title = 'Add item on '+dateISO;
         cell.onclick = ()=> openEditor({date:dateISO});
         calendarGrid.appendChild(cell);
       }
-    }; 
+    }
+
+    if(monthBtn){
+      monthBtn.onclick = ()=>{
+        const showing = monthView.style.display !== 'none';
+        monthView.style.display = showing ? 'none' : 'block';
+        if(!showing) renderMonth();
+      };
+    }
+    if(prevMonthBtn) prevMonthBtn.onclick = ()=>{ monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth()-1, 1); renderMonth(); };
+    if(nextMonthBtn) nextMonthBtn.onclick = ()=>{ monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth()+1, 1); renderMonth(); };
+
+    document.getElementById('todayBtn').onclick = ()=>{
+      window.scrollTo({top:0,behavior:'smooth'});
+      monthCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+      if(monthView.style.display !== 'none') renderMonth();
+    };
 
     document.getElementById('saveBtn').addEventListener('click', (e)=>{
       e.preventDefault();
@@ -344,11 +387,12 @@
       } else {
         tasks.push(mkTask(data.title, data.category, data.date, data.time, data.alertMins, data.notes, data.calendar));
       }
-      saveTasks(tasks); render(); dlg.close(); scheduleAll();
+      saveTasks(tasks); render(); renderMonth(); dlg.close(); scheduleAll();
     });
 
-    filterContainer.addEventListener('change', render);
-    calFilters.addEventListener('change', render);
+    // Filters refresh both views
+    filterContainer.addEventListener('change', ()=>{ render(); renderMonth(); });
+    calFilters.addEventListener('change',   ()=>{ render(); renderMonth(); });
 
     // Notifications
     async function ensurePermission(){ if(!('Notification' in window)) return false; if(Notification.permission==='granted') return true; if(Notification.permission!=='denied'){ const p = await Notification.requestPermission(); return p==='granted'; } return false; }
@@ -368,7 +412,7 @@
       const d2 = new Date(today); d2.setHours(12,15,0,0);
       tasks = [
         mkTask('Work (Nelson Brian)','teaching', iso(d1), '10:15', 10, '', 'cal1'),
-        mkTask('Lunch','personal', iso(d2), '12:15', 0, 'with team', 'main')
+        mkTask('Lunch','personal',  iso(d2), '12:15', 0, 'with team', 'main')
       ];
       saveTasks(tasks);
     }
