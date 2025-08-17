@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MEANRITH YURIN — Dashboard</title>
+<title>MEANRITH YURIN — Work / School / Personal</title>
 <style>
   :root{
-    --bg:#0f1115;--panel:#171a21;--muted:#8a93a6;--text:#e6e9f2;--primary:#3a86ff;--accent:#7c5cff;
-    --work:#4dd0e1;--study:#f48fb1;--event:#f72585;--personal:#ffa62b;--ok:#2ec27e;
+    --bg:#0f1115;--panel:#171a21;--muted:#8a93a6;--text:#e6e9f2;
+    --primary:#3a86ff;--work:#4dd0e1;--school:#f48fb1;--personal:#ffa62b;
     --radius:16px
   }
   *{box-sizing:border-box} html,body{height:100%}
@@ -20,20 +20,18 @@
   h1{font-size:18px;margin:0}
   .section-title{color:var(--muted);font-size:12px;margin:18px 0 8px;text-transform:uppercase;letter-spacing:.1em}
 
-  /* Segmented tabs (no checkboxes) */
-  .tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .tab{padding:10px 12px;border-radius:12px;border:1px solid #1f2430;background:#10131a;text-align:center;cursor:pointer;font-weight:700}
-  .tab.work.active{border-color:var(--work);box-shadow:0 0 0 2px rgba(77,208,225,.15) inset}
-  .tab.study.active{border-color:var(--study);box-shadow:0 0 0 2px rgba(244,143,177,.15) inset}
-
-  /* Chips (no checkmarks) */
-  .chips{display:flex;flex-wrap:wrap;gap:8px}
-  .chip{padding:8px 12px;border-radius:999px;border:1px solid #1f2430;background:#10131a;color:var(--text);cursor:pointer;font-weight:600;font-size:13px}
-  .chip[data-cat="work"].active{border-color:var(--work);color:#bcd3ff}
-  .chip[data-cat="school"].active{border-color:var(--ok);color:#c7f3df}
-  .chip[data-cat="event"].active{border-color:var(--event);color:#ffd0e8}
-  .chip[data-cat="personal"].active{border-color:var(--personal);color:#ffe0b2}
-  .chip[data-cat="teaching"].active{border-color:var(--accent);color:#e2dfff}
+  /* Top nav (three separate pages) */
+  .nav{display:grid;gap:8px}
+  .nav .btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    padding:12px;border-radius:14px;border:1px solid #1f2430;background:#10131a;
+    color:var(--text);font-weight:800;cursor:pointer
+  }
+  .btn .dot{width:10px;height:10px;border-radius:50%}
+  .btn.work  .dot{background:var(--work)}
+  .btn.school .dot{background:var(--school)}
+  .btn.personal .dot{background:var(--personal)}
+  .btn.active{box-shadow:0 0 0 2px rgba(255,255,255,.06) inset;border-color:#2b3344}
 
   .main{display:grid;gap:16px}
   .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
@@ -54,25 +52,9 @@
   .task{display:flex;align-items:flex-start;gap:10px;background:#10131a;border:1px solid #232a39;padding:10px;border-radius:12px;margin:8px 0}
   .task .title{font-weight:600}
   .task .meta{color:var(--muted);font-size:12px;margin-top:2px}
-  .task .badge{margin-left:auto;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700;opacity:.95}
-  .task .actions{display:flex;gap:8px;margin-left:6px}
+  .task .actions{display:flex;gap:8px;margin-left:auto}
   .task .icon{background:#0d1017;border:1px solid #242b3a;border-radius:8px;padding:6px 8px;cursor:pointer}
   .task .icon:hover{border-color:#35405a}
-
-  .cat-work{background:rgba(58,134,255,.18);color:#bcd3ff;border:1px solid rgba(58,134,255,.35)}
-  .cat-school{background:rgba(46,194,126,.18);color:#c7f3df;border:1px solid rgba(46,194,126,.35)}
-  .cat-event{background:rgba(247,37,133,.18);color:#ffd0e8;border:1px solid rgba(247,37,133,.35)}
-  .cat-personal{background:rgba(255,166,43,.18);color:#ffe0b2;border:1px solid rgba(255,166,43,.35)}
-  .cat-teaching{background:rgba(124,92,255,.18);color:#e2dfff;border:1px solid rgba(124,92,255,.35)}
-
-  dialog{border:none;border-radius:16px;padding:0;max-width:520px;width:92vw;background:var(--panel);color:var(--text)}
-  .modal{padding:16px}
-  .form{display:grid;gap:10px}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  label{font-size:13px;color:var(--muted)}
-  input,select,textarea{width:100%;padding:10px;border-radius:10px;background:#0f131a;border:1px solid #243047;color:var(--text)}
-  .footer{display:flex;gap:10px;justify-content:flex-end;margin-top:6px}
-  .empty{color:var(--muted);font-size:13px;padding:6px}
 
   /* Month view */
   .month-head{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;color:var(--muted);font-size:12px;margin:6px 0}
@@ -82,6 +64,16 @@
   .daynum{font-weight:700;color:var(--text);opacity:.9}
   .count{margin-left:auto;font-size:11px;padding:2px 6px;border-radius:999px;background:#0d1017;border:1px solid #242b3a;color:var(--muted)}
   .month-today{outline:2px solid var(--primary);box-shadow:0 0 0 3px rgba(58,134,255,.25) inset}
+
+  /* Dialog */
+  dialog{border:none;border-radius:16px;padding:0;max-width:520px;width:92vw;background:var(--panel);color:var(--text)}
+  .modal{padding:16px}
+  .form{display:grid;gap:10px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  label{font-size:13px;color:var(--muted)}
+  input,textarea{width:100%;padding:10px;border-radius:10px;background:#0f131a;border:1px solid #243047;color:var(--text)}
+  .footer{display:flex;gap:10px;justify-content:flex-end;margin-top:6px}
+  .empty{color:var(--muted);font-size:13px;padding:6px}
 
   /* Print */
   .print-header{display:none}
@@ -96,7 +88,7 @@
     .card{break-inside:avoid;page-break-inside:avoid}
   }
 
-  /* branding */
+  /* background grid + name */
   body::after{content:"";position:fixed;inset:0;pointer-events:none;background-image:
       linear-gradient(to right, rgba(255,255,255,.03) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(255,255,255,.03) 1px, transparent 1px);
@@ -109,23 +101,15 @@
     <aside class="sidebar">
       <div class="brand"><span class="dot"></span><h1>MEANRITH YURIN</h1></div>
 
-      <div class="section-title">Choose calendar</div>
-      <div class="tabs">
-        <div class="tab work active"  data-cal="work">Work</div>
-        <div class="tab study"        data-cal="study">Study</div>
+      <div class="section-title">Open page</div>
+      <div class="nav" id="navTabs">
+        <div class="btn work active"   data-cal="work"><span class="dot"></span> Work</div>
+        <div class="btn school"         data-cal="school"><span class="dot"></span> School</div>
+        <div class="btn personal"       data-cal="personal"><span class="dot"></span> Personal</div>
       </div>
 
-      <div class="section-title">Types</div>
-      <div class="chips" id="typeChips">
-        <div class="chip active" data-cat="work">Work</div>
-        <div class="chip active" data-cat="school">School</div>
-        <div class="chip active" data-cat="event">Event</div>
-        <div class="chip active" data-cat="personal">Personal</div>
-        <div class="chip active" data-cat="teaching">Teaching</div>
-      </div>
-
-      <div class="section-title">Quick Actions</div>
-      <div class="cats">
+      <div class="section-title">Quick actions</div>
+      <div class="nav">
         <button id="newBtn">+ Add Task / Event</button>
         <button id="pdfBtn" class="ghost">Export PDF</button>
       </div>
@@ -133,7 +117,7 @@
 
     <main class="main">
       <div class="toolbar card">
-        <div class="title">Next 7 days</div>
+        <div class="title" id="viewTitle">Work — Next 7 days</div>
         <div class="spacer"></div>
         <button class="ghost" id="todayBtn">Jump to Today</button>
         <button id="monthBtn">Month View</button>
@@ -165,7 +149,7 @@
   <!-- Editor -->
   <dialog id="editor">
     <form method="dialog" class="modal" id="taskForm">
-      <h3 style="margin:0 0 8px">Add / Edit Task</h3>
+      <h3 style="margin:0 0 8px">Add / Edit</h3>
       <div class="form">
         <div>
           <label>Title</label>
@@ -176,32 +160,9 @@
           <div><label>Time</label><input id="fTime" type="time" required /></div>
         </div>
         <div class="row">
-          <div>
-            <label>Type</label>
-            <select id="fCat">
-              <option value="work">Work</option>
-              <option value="school">School</option>
-              <option value="event">Event</option>
-              <option value="personal">Personal</option>
-              <option value="teaching">Teaching</option>
-            </select>
-          </div>
-          <div>
-            <label>Calendar</label>
-            <select id="fCalendar">
-              <option value="work">Work</option>
-              <option value="study">Study</option>
-            </select>
-          </div>
-          <div>
-            <label>Alert (minutes before)</label>
-            <input id="fAlert" type="number" min="0" step="5" placeholder="0 = at time" />
-          </div>
+          <div><label>Alert (minutes before)</label><input id="fAlert" type="number" min="0" step="5" placeholder="0 = at time" /></div>
         </div>
-        <div>
-          <label>Notes</label>
-          <textarea id="fNotes" rows="3" placeholder="Optional"></textarea>
-        </div>
+        <div><label>Notes</label><textarea id="fNotes" rows="3" placeholder="Optional"></textarea></div>
       </div>
       <div class="footer">
         <button type="button" class="ghost" id="cancelBtn">Cancel</button>
@@ -211,97 +172,70 @@
   </dialog>
 
 <script>
-  const LS_KEY='my_week_tasks_v1';
-  const UI_CAL_KEY='active_calendar';
-  function loadTasks(){ try{return JSON.parse(localStorage.getItem(LS_KEY))||[]}catch{return[]} }
-  function saveTasks(list){ localStorage.setItem(LS_KEY, JSON.stringify(list)) }
-  let tasks = loadTasks();
+  // --------- Router (3 pages in one file) ---------
+  const NAV = document.getElementById('navTabs');
+  let currentCal = (location.hash.replace('#','') || 'work'); // 'work' | 'school' | 'personal'
+  function setActiveNav(){
+    NAV.querySelectorAll('.btn').forEach(b=>{
+      b.classList.toggle('active', b.dataset.cal===currentCal);
+    });
+    document.getElementById('viewTitle').textContent =
+      cap(currentCal) + ' — Next 7 days';
+  }
+  NAV.addEventListener('click', e=>{
+    const b = e.target.closest('.btn'); if(!b) return;
+    currentCal = b.dataset.cal;
+    location.hash = '#' + currentCal;
+    tasks = loadTasks(currentCal);
+    weekStart = startOfDay(new Date());
+    monthCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    setActiveNav(); render(); renderMonth(); scheduleAll();
+  });
+  window.addEventListener('hashchange', ()=>{
+    currentCal = (location.hash.replace('#','') || 'work');
+    tasks = loadTasks(currentCal);
+    setActiveNav(); render(); renderMonth(); scheduleAll();
+  });
 
-  // migrate old calendars main/cal1 -> work/study
-  tasks = tasks.map(t=>({ ...t, calendar: t.calendar==='cal1'?'study': (t.calendar==='main'||!t.calendar)?'work':t.calendar }));
-  saveTasks(tasks);
+  // --------- Storage per page ---------
+  function keyFor(cal){ return `cal_${cal}_v1`; }
+  function loadTasks(cal){ try{ return JSON.parse(localStorage.getItem(keyFor(cal))) || [] }catch{ return [] } }
+  function saveTasks(cal, list){ localStorage.setItem(keyFor(cal), JSON.stringify(list)) }
+  let tasks = loadTasks(currentCal);
 
+  // --------- Utilities ---------
+  function cap(s){ return s[0].toUpperCase()+s.slice(1) }
   function mkId(){ return Math.random().toString(36).slice(2,10) }
-  function mkTask(title,category,date,time,alertMins=0,notes='',calendar='work'){
-    return { id:mkId(), title, category, date, time, alertMins:Number(alertMins||0), notes, calendar, done:false };
+  function mkTask(title,date,time,alertMins=0,notes=''){
+    return { id:mkId(), title, date, time, alertMins:Number(alertMins||0), notes, done:false };
   }
-
-  // Active calendar (one at a time)
-  let activeCal = localStorage.getItem(UI_CAL_KEY) || 'work';
-
-  // Chips state (types)
-  const chipContainer = document.getElementById('typeChips');
-  function getActiveCats(){
-    return Array.from(chipContainer.querySelectorAll('.chip.active')).map(x=>x.dataset.cat);
-  }
-
-  // Elements
-  const daysGrid = document.getElementById('daysGrid');
-  const tabs = document.querySelectorAll('.tab');
-  tabs.forEach(t=>{
-    if(t.dataset.cal===activeCal) t.classList.add('active');
-    t.onclick = () => {
-      tabs.forEach(x=>x.classList.remove('active'));
-      t.classList.add('active');
-      activeCal = t.dataset.cal;
-      localStorage.setItem(UI_CAL_KEY, activeCal);
-      render(); renderMonth();
-    };
-  });
-  chipContainer.addEventListener('click', (e)=>{
-    const c = e.target.closest('.chip'); if(!c) return;
-    c.classList.toggle('active');
-    render(); renderMonth();
-  });
-
-  const dlg = document.getElementById('editor');
-  document.getElementById('cancelBtn').onclick=(e)=>{ e.preventDefault(); dlg.close(); };
-  const fTitle = document.getElementById('fTitle');
-  const fDate  = document.getElementById('fDate');
-  const fTime  = document.getElementById('fTime');
-  const fCat   = document.getElementById('fCat');
-  const fCal   = document.getElementById('fCalendar');
-  const fAlert = document.getElementById('fAlert');
-  const fNotes = document.getElementById('fNotes');
-  let editingId = null;
-
   const now = ()=>new Date();
-  function startOfDay(d){const x=new Date(d);x.setHours(0,0,0,0);return x}
-  function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x}
-  function fmtDay(d){return d.toLocaleDateString(undefined,{weekday:'long'})}
-  function fmtDate(d){return d.toLocaleDateString(undefined,{month:'short',day:'numeric'})}
-  function fmtDateFull(d){return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}
-  function escapeHtml(s){return s.replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+  function startOfDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x }
+  function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x }
+  function fmtDay(d){ return d.toLocaleDateString(undefined,{weekday:'long'}) }
+  function fmtDate(d){ return d.toLocaleDateString(undefined,{month:'short', day:'numeric'}) }
+  function fmtDateFull(d){ return d.toLocaleDateString(undefined,{month:'short', day:'numeric', year:'numeric'}) }
+  function escapeHtml(s){ return s.replace(/[&<>\"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]) ) }
 
-  // Week cursor + jump
-  let weekStart = startOfDay(now());
-  function jumpToDate(date){
-    weekStart = startOfDay(date);
-    document.getElementById('monthView').style.display='none';
-    render();
-    const iso = weekStart.toISOString().slice(0,10);
-    const el = document.getElementById('day-'+iso);
-    window.scrollTo({top:0,behavior:'smooth'});
-    if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
-  }
+  // --------- Week view ---------
+  const daysGrid = document.getElementById('daysGrid');
+  let weekStart = startOfDay(new Date());
 
-  // Render week (active calendar only)
   function render(){
-    const cats = getActiveCats();
     const start = weekStart;
     daysGrid.innerHTML = '';
     for(let i=0;i<7;i++){
       const day = addDays(start,i);
       const dateISO = day.toISOString().slice(0,10);
       const dayTasks = tasks
-        .filter(t=> t.calendar===activeCal && t.date===dateISO && (cats.includes(t.category)))
+        .filter(t => t.date===dateISO)
         .sort((a,b)=> a.time.localeCompare(b.time));
 
       const col = document.createElement('div');
       col.className='card';
       col.id = 'day-'+dateISO;
 
-      const isToday = startOfDay(now()).getTime()===startOfDay(day).getTime();
+      const isToday = startOfDay(new Date()).getTime()===startOfDay(day).getTime();
       col.innerHTML = `
         <div class="day-header">
           <h3>${i===0? 'Today' : fmtDay(day)} <span style="color:var(--muted);font-weight:500">${fmtDate(day)}</span>${isToday?'<span class="today-chip">TODAY</span>':''}</h3>
@@ -314,7 +248,7 @@
 
       const listEl = col.querySelector('.list');
       dayTasks.forEach(t=> listEl.appendChild(renderTask(t)) );
-      col.querySelector('[data-add]').onclick=(e)=> openEditor({date:e.target.dataset.add});
+      col.querySelector('[data-add]').onclick = (e)=> openEditor({date:e.target.dataset.add});
       daysGrid.appendChild(col);
     }
     updatePrintHeader();
@@ -323,46 +257,24 @@
   function renderTask(t){
     const wrap = document.createElement('div');
     wrap.className='task';
-    const badgeClass = { work:'cat-work', school:'cat-school', event:'cat-event', personal:'cat-personal', teaching:'cat-teaching' }[t.category] || 'cat-personal';
     wrap.innerHTML = `
       <div>
         <div class="title">${escapeHtml(t.title)}</div>
         <div class="meta">${t.time} • ${t.notes? escapeHtml(t.notes): ''}</div>
       </div>
-      <span class="badge ${badgeClass}">${t.category}</span>
       <div class="actions">
         <button class="icon" title="Done" data-done="${t.id}">✔</button>
         <button class="icon" title="Edit" data-edit="${t.id}">✎</button>
         <button class="icon" title="Delete" data-del="${t.id}">🗑</button>
       </div>`;
-    wrap.querySelector('[data-done]').onclick=()=>{ t.done=!t.done; saveTasks(tasks); render(); renderMonth(); };
-    wrap.querySelector('[data-edit]').onclick=()=> openEditor(t);
-    wrap.querySelector('[data-del]').onclick=()=>{ if(confirm('Delete this item?')){ tasks = tasks.filter(x=>x.id!==t.id); saveTasks(tasks); render(); renderMonth(); } };
+    wrap.querySelector('[data-done]').onclick = ()=>{ t.done=!t.done; saveTasks(currentCal,tasks); render(); renderMonth(); };
+    wrap.querySelector('[data-edit]').onclick = ()=> openEditor(t);
+    wrap.querySelector('[data-del]').onclick = ()=>{ if(confirm('Delete this item?')){ tasks = tasks.filter(x=>x.id!==t.id); saveTasks(currentCal,tasks); render(); renderMonth(); } };
     if(t.done){ wrap.style.opacity=.6; wrap.style.textDecoration='line-through' }
     return wrap;
   }
 
-  function openEditor(seed={}){
-    editingId = seed.id || null;
-    fTitle.value = seed.title || '';
-    fDate.value  = seed.date || new Date().toISOString().slice(0,10);
-    fTime.value  = seed.time || new Date().toTimeString().slice(0,5);
-    fCat.value   = seed.category || 'personal';
-    fCal.value   = seed.calendar || activeCal;        // default to active calendar
-    fAlert.value = (seed.alertMins ?? 0);
-    fNotes.value = seed.notes || '';
-    dlg.showModal();
-  }
-
-  document.getElementById('newBtn').onclick = ()=> openEditor({});
-  document.getElementById('newBtnTop').onclick = ()=> openEditor({});
-  document.getElementById('todayBtn').onclick = ()=> jumpToDate(new Date());
-
-  // PDF
-  const pdfBtn = document.getElementById('pdfBtn');
-  if(pdfBtn){ pdfBtn.onclick = ()=> { updatePrintHeader(); window.print(); }; }
-
-  // Month view
+  // --------- Month view ---------
   const monthBtn = document.getElementById('monthBtn');
   const monthView = document.getElementById('monthView');
   const monthTitle = document.getElementById('monthTitle');
@@ -370,9 +282,8 @@
   let monthCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
   function renderMonth(){
-    monthTitle.textContent = monthCursor.toLocaleDateString(undefined,{month:'long',year:'numeric'}) + ' — ' + (activeCal==='work'?'Work':'Study');
+    monthTitle.textContent = cap(currentCal)+' — ' + monthCursor.toLocaleDateString(undefined,{month:'long',year:'numeric'});
     calendarGrid.innerHTML = '';
-    const cats = getActiveCats();
 
     const firstDow = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1).getDay();
     const daysIn = new Date(monthCursor.getFullYear(), monthCursor.getMonth()+1, 0).getDate();
@@ -383,25 +294,25 @@
     for(let d=1; d<=daysIn; d++){
       const dt = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), d);
       const dateISO = dt.toISOString().slice(0,10);
-      const count = tasks.filter(t=> t.calendar===activeCal && t.date===dateISO && cats.includes(t.category)).length;
+      const count = tasks.filter(t=> t.date===dateISO).length;
 
       const cell = document.createElement('div');
       cell.className='daycell';
       if(dateISO===todayISO) cell.classList.add('month-today');
 
-      const top = document.createElement('div');
-      top.style.display='flex'; top.style.alignItems='center'; top.style.gap='6px';
-      const dn  = document.createElement('div'); dn.className='daynum';  dn.textContent=d;
-      const ct  = document.createElement('div'); ct.className='count';    ct.textContent = count>0? String(count): '';
+      const top = document.createElement('div'); top.style.display='flex'; top.style.alignItems='center'; top.style.gap='6px';
+      const dn  = document.createElement('div'); dn.className='daynum'; dn.textContent=d;
+      const ct  = document.createElement('div'); ct.className='count'; ct.textContent = count>0? String(count): '';
       top.appendChild(dn); top.appendChild(ct);
       cell.appendChild(top);
 
       cell.title = 'Add item on '+dateISO;
-      cell.onclick = ()=>{ openEditor({date:dateISO, calendar:activeCal}); };
+      cell.onclick = ()=> openEditor({date:dateISO});
 
       calendarGrid.appendChild(cell);
     }
   }
+
   document.getElementById('prevMonth').onclick = ()=>{ monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth()-1, 1); renderMonth(); };
   document.getElementById('nextMonth').onclick = ()=>{ monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth()+1, 1); renderMonth(); };
   monthBtn.onclick = ()=>{
@@ -410,15 +321,35 @@
     if(!showing) renderMonth();
   };
 
-  // Save
+  // --------- Dialog / Save ---------
+  const dlg = document.getElementById('editor');
+  const cancelBtn = document.getElementById('cancelBtn');
+  cancelBtn.onclick = (e)=>{ e.preventDefault(); dlg.close(); };
+  const fTitle = document.getElementById('fTitle');
+  const fDate  = document.getElementById('fDate');
+  const fTime  = document.getElementById('fTime');
+  const fAlert = document.getElementById('fAlert');
+  const fNotes = document.getElementById('fNotes');
+  let editingId = null;
+
+  function openEditor(seed={}){
+    editingId = seed.id || null;
+    fTitle.value = seed.title || '';
+    fDate.value  = seed.date || new Date().toISOString().slice(0,10);
+    fTime.value  = seed.time || new Date().toTimeString().slice(0,5);
+    fAlert.value = (seed.alertMins ?? 0);
+    fNotes.value = seed.notes || '';
+    dlg.showModal();
+  }
+  document.getElementById('newBtn').onclick = ()=> openEditor({});
+  document.getElementById('newBtnTop').onclick = ()=> openEditor({});
+
   document.getElementById('saveBtn').addEventListener('click', (e)=>{
     e.preventDefault();
     const data = {
       title: fTitle.value.trim(),
       date:  fDate.value,
       time:  fTime.value,
-      category: fCat.value,
-      calendar: fCal.value,
       alertMins: Number(fAlert.value||0),
       notes: fNotes.value.trim()
     };
@@ -427,41 +358,55 @@
       const idx = tasks.findIndex(x=>x.id===editingId);
       tasks[idx] = { ...tasks[idx], ...data };
     } else {
-      tasks.push(mkTask(data.title, data.category, data.date, data.time, data.alertMins, data.notes, data.calendar));
+      tasks.push(mkTask(data.title, data.date, data.time, data.alertMins, data.notes));
     }
-    saveTasks(tasks); dlg.close(); render(); renderMonth(); scheduleAll();
+    saveTasks(currentCal, tasks); dlg.close(); render(); renderMonth(); scheduleAll();
   });
 
-  // Notifications
-  async function ensurePermission(){ if(!('Notification' in window)) return false; if(Notification.permission==='granted') return true; if(Notification.permission!=='denied'){ const p = await Notification.requestPermission(); return p==='granted'; } return false; }
-  function whenToNotify(task){ const dt = new Date(task.date+'T'+task.time+':00'); return dt.getTime() - (task.alertMins||0)*60000; }
-  let timers=[]; function clearTimers(){ timers.forEach(clearTimeout); timers=[] }
-  function scheduleAll(){ clearTimers(); ensurePermission(); const nowMs=Date.now(); tasks.forEach(t=>{ const fireAt=whenToNotify(t); if(fireAt>nowMs){ timers.push(setTimeout(()=>fireNotify(t), fireAt-nowMs)); } }); }
-  function fireNotify(task){ try{ if('Notification' in window && Notification.permission==='granted'){ const body = `${task.time} • ${(task.calendar||'work').toUpperCase()} • ${task.category.toUpperCase()}${task.notes? ' – '+task.notes:''}`; const n=new Notification(task.title,{body}); setTimeout(()=>n.close(),8000);} else { alert(`[Reminder] ${task.title} @ ${task.time}`)} }catch(e){ console.warn(e)} }
+  // --------- Jump to Today ---------
+  document.getElementById('todayBtn').onclick = ()=>{
+    weekStart = startOfDay(new Date());
+    monthCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    render();
+    const iso = weekStart.toISOString().slice(0,10);
+    const el = document.getElementById('day-'+iso);
+    window.scrollTo({top:0,behavior:'smooth'});
+    if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+    if(monthView.style.display!=='none') renderMonth();
+  };
 
-  // Seed if empty
+  // --------- PDF ---------
+  const pdfBtn = document.getElementById('pdfBtn');
+  if(pdfBtn){ pdfBtn.onclick = ()=> { updatePrintHeader(); window.print(); }; }
+  function updatePrintHeader(){
+    const header = document.getElementById('printHeader');
+    const start = startOfDay(weekStart);
+    const end = addDays(start,6);
+    header.textContent = `${cap(currentCal)} — ${fmtDateFull(start)} – ${fmtDateFull(end)}`;
+  }
+
+  // --------- Notifications ---------
+  async function ensurePermission(){ if(!('Notification' in window)) return false; if(Notification.permission==='granted') return true; if(Notification.permission!=='denied'){ const p = await Notification.requestPermission(); return p==='granted'; } return false; }
+  function whenToNotify(task){ const dt = new Date(task.date + 'T' + task.time + ':00'); return dt.getTime() - (task.alertMins||0)*60000; }
+  let timers = []; function clearTimers(){ timers.forEach(clearTimeout); timers=[] }
+  function scheduleAll(){ clearTimers(); ensurePermission(); const nowMs=Date.now(); tasks.forEach(t=>{ const fireAt=whenToNotify(t); if(fireAt>nowMs){ timers.push(setTimeout(()=>fireNotify(t), fireAt-nowMs)); } }); }
+  function fireNotify(task){ try{ if('Notification' in window && Notification.permission==='granted'){ const body = `${task.time}${task.notes? ' • '+task.notes:''}`; const n = new Notification(task.title,{ body }); setTimeout(()=> n.close(), 8000);} else { alert(`[Reminder] ${task.title} @ ${task.time}`)} }catch(e){ console.warn(e)} }
+
+  // --------- Seed if empty (per page) ---------
   if(tasks.length===0){
     const today=new Date(); const iso=d=>d.toISOString().slice(0,10);
     const d1=new Date(today); d1.setHours(10,15,0,0);
     const d2=new Date(today); d2.setHours(12,15,0,0);
-    const d3=new Date(today); d3.setDate(d3.getDate()+1); d3.setHours(9,0,0,0);
     tasks=[
-      mkTask('Team Sync','work',    iso(d1),'10:15',10,'',        'work'),
-      mkTask('Lunch','personal',    iso(d2),'12:15',0,'with team','work'),
-      mkTask('Study BBU','school',  iso(d3),'09:00',15,'DB HW',   'study'),
+      mkTask('Welcome – add your first item', iso(d1), '10:15', 10, ''),
+      mkTask('Try PDF export from sidebar',   iso(d2), '12:15', 0, '')
     ];
-    saveTasks(tasks);
+    saveTasks(currentCal,tasks);
   }
 
-  // Print header
-  function updatePrintHeader(){
-    const header=document.getElementById('printHeader');
-    const start=startOfDay(weekStart); const end=addDays(start,6);
-    header.textContent=`${activeCal==='work'?'Work':'Study'} — ${fmtDateFull(start)} – ${fmtDateFull(end)}`;
-  }
-
-  // Boot
-  render(); scheduleAll();
+  // --------- Boot ---------
+  setActiveNav();
+  render(); renderMonth(); scheduleAll();
 </script>
 </body>
 </html>
