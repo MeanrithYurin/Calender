@@ -1,538 +1,536 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Yurin Calendar — Pages + Filters + One‑click PDF</title>
-  <!-- jsPDF & AutoTable for direct PDF downloads (no print dialog) -->
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
-  <style>
-    :root{
-      --bg:#0f1217; /* dark grid background */
-      --panel:#121722;
-      --panel-2:#0e1420;
-      --muted:#9aa3b2;
-      --text:#e6e8ec;
-      --accent:#4c7ef3;
-      --border:#22304a;
-      --shadow:0 10px 26px rgba(0,0,0,.4);
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MEANRITH YURIN — Calendar</title>
+<style>
+  :root{
+    --bg:#0f1115;--panel:#171a21;--muted:#8a93a6;--text:#e6e9f2;
+    --primary:#3a86ff;--work:#4dd0e1;--school:#7fd28b;--personal:#ffa62b;--event:#f72585;--teaching:#7c5cff;
+    --radius:16px
+  }
+  *{box-sizing:border-box} html,body{height:100%}
+  body{margin:0;background:#0f1115;color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
 
-      /* category colors */
-      --clr-personal:#f6b73c;
-      --clr-work:#56c6c6;
-      --clr-school:#ff8ad4;
-      --clr-event:#7dd957;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', "Khmer OS Content", "Battambang", sans-serif;
-      color:var(--text); background:var(--bg);
-      display:flex; gap:18px; padding:18px; overflow:hidden; }
+  .app{display:grid;grid-template-columns:280px 1fr;gap:20px;max-width:1200px;margin:24px auto;padding:0 16px}
+  .sidebar{background:var(--panel);border-radius:var(--radius);padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--primary)}
+  h1{font-size:18px;margin:0}
+  .section-title{color:var(--muted);font-size:12px;margin:18px 0 8px;text-transform:uppercase;letter-spacing:.1em}
 
-    /* Subtle grid background */
-    body:before{
-      content:""; position:fixed; inset:0; pointer-events:none;
-      background:linear-gradient(transparent 31px, rgba(255,255,255,.03) 32px),
-                 linear-gradient(90deg, transparent 31px, rgba(255,255,255,.03) 32px);
-      background-size:32px 32px;
-    }
+  /* Category chips (no checkboxes) */
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 12px;border-radius:999px;border:1px solid #293243;background:#10131a;color:var(--text);
+    cursor:pointer;font-weight:700;font-size:13px;opacity:.85
+  }
+  .chip .dot{width:10px;height:10px;border-radius:50%}
+  .chip.work .dot{background:var(--work)}
+  .chip.school .dot{background:var(--school)}
+  .chip.personal .dot{background:var(--personal)}
+  .chip.event .dot{background:var(--event)}
+  .chip.teaching .dot{background:var(--teaching)}
+  .chip.active{border-color:#3a86ff33;background:#0f1624;opacity:1}
 
-    .sidebar{
-      width:280px; min-width:260px; background:var(--panel); border:1px solid var(--border);
-      border-radius:18px; padding:18px; box-shadow:var(--shadow); height:calc(100vh - 36px); overflow:auto;
-    }
-    .brand{
-      display:flex; align-items:center; gap:10px; margin-bottom:12px;
-      font-weight:800; letter-spacing:.4px; font-size:1.2rem;
-    }
-    .dot{width:10px; height:10px; border-radius:50%}
+  .main{display:grid;gap:16px}
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .toolbar .title{font-size:22px;font-weight:700}
+  .toolbar .spacer{flex:1}
+  button{background:var(--primary);color:white;border:none;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer;box-shadow:0 8px 20px rgba(58,134,255,.25);transition:.2s}
+  button:hover{filter:brightness(1.07);transform:translateY(-1px)}
+  .ghost{background:#12151e;border:1px solid #222836;color:var(--text);box-shadow:none}
 
-    .section-title{margin-top:16px; color:var(--muted); font-size:.85rem; letter-spacing:.06em}
+  .card{background:var(--panel);border-radius:var(--radius);padding:14px 14px 8px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
 
-    .page-list{margin:10px 0 6px; display:grid; gap:8px}
-    .page{
-      display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 12px; background:var(--panel-2);
-      border:1px solid var(--border); border-radius:14px; cursor:pointer; transition:transform .12s ease, border-color .12s ease, background .12s ease;
-    }
-    .page:hover{transform:translateY(-1px); border-color:#2a3b5f; background:#111a2a}
-    .page:active{transform:translateY(0)}
-    .page.active{outline:2px solid rgba(255,255,255,.08)}
+  .day-header{display:flex;align-items:center;justify-content:space-between;margin:4px 0 8px}
+  .day-header h3{margin:0;font-size:16px}
+  .today-chip{margin-left:8px;background:var(--primary);color:#fff;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
+  .focus-day{outline:2px solid var(--primary);background:linear-gradient(180deg, rgba(58,134,255,.08), transparent 22%)}
 
-    .btn{
-      width:100%; padding:14px 16px; background:linear-gradient(180deg, #2f65f2, #3f59e8);
-      color:white; border:none; border-radius:14px; cursor:pointer; font-weight:700;
-      box-shadow:0 10px 18px rgba(76,126,243,.25); transition:transform .08s ease, box-shadow .12s ease, filter .12s ease;
-    }
-    .btn:hover{box-shadow:0 12px 22px rgba(76,126,243,.33); filter:brightness(1.02)}
-    .btn:active{transform:translateY(1px)}
-    .btn-outline{
-      width:100%; padding:12px 14px; background:transparent; color:var(--text);
-      border:1px solid var(--border); border-radius:14px; cursor:pointer; transition:background .12s ease, border-color .12s ease;
-    }
-    .btn-outline:hover{background:#111a2a; border-color:#2a3b5f}
-    .btn-outline:active{transform:translateY(1px)}
+  .task{display:flex;align-items:flex-start;gap:10px;background:#10131a;border:1px solid #232a39;padding:12px;border-radius:12px;margin:8px 0}
+  .task .title{font-weight:700}
+  .task .meta{color:var(--muted);font-size:12px;margin-top:2px}
+  .task .actions{display:flex;gap:8px;margin-left:auto}
+  .task .icon{background:#0d1017;border:1px solid #242b3a;border-radius:8px;padding:6px 8px;cursor:pointer}
+  .task .icon:hover{border-color:#35405a}
+  .pill{padding:3px 8px;border-radius:999px;font-size:11px;font-weight:800;margin-left:8px}
+  .p-work{background:rgba(77,208,225,.18);color:#c7f6ff;border:1px solid rgba(77,208,225,.35)}
+  .p-school{background:rgba(127,210,139,.18);color:#e0ffe7;border:1px solid rgba(127,210,139,.35)}
+  .p-personal{background:rgba(255,166,43,.18);color:#ffe0b2;border:1px solid rgba(255,166,43,.35)}
+  .p-event{background:rgba(247,37,133,.18);color:#ffd0e8;border:1px solid rgba(247,37,133,.35)}
+  .p-teaching{background:rgba(124,92,255,.18);color:#e2dfff;border:1px solid rgba(124,92,255,.35)}
 
-    .nav-btns{display:flex; gap:8px}
-    .nav-btn{width:36px; height:36px; display:grid; place-items:center; border-radius:10px; background:var(--panel-2); border:1px solid var(--border); cursor:pointer; transition:background .12s ease, transform .08s ease, border-color .12s ease}
-    .nav-btn:hover{background:#111a2a; border-color:#2a3b5f}
-    .nav-btn:active{transform:translateY(1px)}
+  /* Month view */
+  .month-head{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;color:var(--muted);font-size:12px;margin:6px 0}
+  .month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .daycell{background:#10131a;border:1px solid #232a39;border-radius:12px;padding:8px;min-height:80px;display:flex;flex-direction:column;gap:6px;cursor:pointer}
+  .daycell:hover{border-color:#35405a}
+  .daynum{font-weight:700;color:var(--text);opacity:.9}
+  .count{margin-left:auto;font-size:11px;padding:2px 6px;border-radius:999px;background:#0d1017;border:1px solid #242b3a;color:var(--muted)}
+  .month-today{outline:2px solid var(--primary);box-shadow:0 0 0 3px rgba(58,134,255,.25) inset}
 
-    .vspace{height:10px}
+  /* Dialog + blur */
+  dialog{border:none;border-radius:16px;padding:0;max-width:520px;width:92vw;background:var(--panel);color:var(--text)}
+  .modal{padding:16px}
+  .form{display:grid;gap:10px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  label{font-size:13px;color:var(--muted)}
+  input,select,textarea{width:100%;padding:10px;border-radius:10px;background:#0f131a;border:1px solid #243047;color:var(--text)}
+  .footer{display:flex;gap:10px;justify-content:flex-end;margin-top:6px}
+  .empty{color:var(--muted);font-size:13px;padding:6px}
 
-    .app{
-      flex:1; background:var(--panel); border:1px solid var(--border); border-radius:18px; box-shadow:var(--shadow);
-      overflow:hidden; display:flex; flex-direction:column;
-    }
-    .app-header{
-      display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--border);
-    }
-    .title{ font-size:1.25rem; font-weight:800; letter-spacing:.3px; }
+  body.modal-open .app{filter: blur(6px) brightness(0.92);transform: scale(0.995);transition: filter .18s, transform .18s}
+  dialog::backdrop{background: rgba(0,0,0,.55);backdrop-filter: blur(6px);-webkit-backdrop-filter: blur(6px)}
+  dialog{animation: dialogPop .18s ease}
+  @keyframes dialogPop{from{transform:scale(.98);opacity:0}to{transform:scale(1);opacity:1}}
 
-    .calendar{ padding:14px; display:grid; grid-template-rows:auto 1fr; height:100%; }
-    .dow{display:grid; grid-template-columns:repeat(7, 1fr); gap:8px; color:var(--muted); font-size:.85rem; padding:6px 4px 8px}
-    .grid{display:grid; grid-template-columns:repeat(7, 1fr); grid-auto-rows:110px; gap:8px; overflow:auto; padding-bottom:12px}
+  /* Print */
+  .print-header{display:none}
+  #printRange{display:none}
+  @media print{
+    body{background:#fff !important;color:#111 !important}
+    .app{grid-template-columns:1fr !important}
+    .sidebar{display:none !important}
+    .toolbar button,.day-header button,.task .actions{display:none !important}
+    .card,.task{background:#fff !important;color:#111 !important;box-shadow:none;border:1px solid #e5e7eb}
+    .grid{grid-template-columns:1fr !important}
+    .print-header{display:block;margin-bottom:12px}
+    .card{break-inside:avoid;page-break-inside:avoid}
+    body.range-print .main > *:not(#printRange){ display:none !important }
+    body.range-print #printRange{ display:block !important }
+  }
 
-    .cell{
-      position:relative; border:1px solid var(--border); border-radius:14px; background:var(--panel-2);
-      padding:8px; display:flex; flex-direction:column; gap:6px; cursor:pointer; transition:border-color .15s, background .12s ease;
-    }
-    .cell:hover{border-color:#2a3b5f; background:#0f1929}
-    .cell .day{font-weight:700; color:#d6d9df}
-    .cell.out{opacity:.45}
-    .cell.today{box-shadow:inset 0 0 0 2px var(--accent)}
-
-    .pill{
-      display:inline-flex; align-items:center; gap:8px; padding:6px 8px; font-size:.8rem; border-radius:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-      background:#1a2334; border:1px solid #263652;
-    }
-    .badge{width:8px; height:8px; border-radius:50%}
-
-    /* Modal */
-    .modal{ position:fixed; inset:0; display:none; place-items:center; background:rgba(0,0,0,.5); z-index:50; }
-    .modal.open{ display:grid; }
-    .card{ width:min(520px, 92vw); background:var(--panel); border:1px solid var(--border); border-radius:18px; padding:18px; box-shadow:var(--shadow) }
-    .row{ display:grid; grid-template-columns:1fr 1fr; gap:12px }
-    .field{ display:flex; flex-direction:column; gap:6px; }
-    label{ color:var(--muted); font-size:.85rem }
-    input, select, textarea{ background:var(--panel-2); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
-    textarea{ resize:vertical; min-height:70px }
-    .actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:14px }
-
-    .legend{ display:flex; gap:10px; flex-wrap:wrap; margin:12px 0 4px }
-    .legend .filter{ display:flex; align-items:center; gap:8px; border:1px solid var(--border); padding:6px 10px; border-radius:999px; cursor:pointer; transition:background .12s ease, border-color .12s ease }
-    .legend .filter:hover{background:#111a2a; border-color:#2a3b5f}
-    .legend .filter.active{ outline:2px solid rgba(255,255,255,.06) }
-
-    .muted{ color:var(--muted) }
-  </style>
+  /* background grid + name */
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;background-image:
+      linear-gradient(to right, rgba(255,255,255,.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,.03) 1px, transparent 1px);
+      background-size:24px 24px,24px 24px;z-index:0}
+  body::before{content:"MEANRITH YURIN";position:fixed;top:10px;right:16px;font-weight:900;letter-spacing:.2em;color:rgba(255,255,255,.06);font-size:clamp(20px,4vw,44px);pointer-events:none;z-index:0}
+</style>
 </head>
 <body>
-  <aside class="sidebar">
-    <div class="brand"><span class="dot" style="background:var(--accent)"></span> MEANRITH YURIN</div>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><span class="dot"></span><h1>MEANRITH YURIN</h1></div>
 
-    <div class="section-title">OPEN PAGE</div>
-    <div class="page-list" id="pageList">
-      <!-- Filled by JS with real pages (Dashboard, Personal, Work, School, Event) -->
-    </div>
-
-    <div class="section-title">QUICK ACTIONS</div>
-    <button class="btn" id="addBtn">+ Add Task / Event</button>
-    <div class="vspace"></div>
-    <button class="btn-outline" id="exportWeek">Export PDF (This Week)</button>
-    <div class="vspace"></div>
-    <button class="btn-outline" id="exportRange">Export Range → PDF</button>
-    <div class="vspace"></div>
-    <button class="btn-outline" id="downloadJson" title="Backup to JSON">Backup JSON (optional)</button>
-    <div class="vspace"></div>
-    <button class="btn-outline" id="restoreJson" title="Restore from JSON">Restore JSON (optional)</button>
-  </aside>
-
-  <main class="app">
-    <div class="app-header">
-      <div class="title" id="title">My Calendar — August 2025</div>
-      <div class="nav-btns">
-        <button class="nav-btn" id="prevMonth" title="Previous month">⟨</button>
-        <button class="nav-btn" id="nextMonth" title="Next month">⟩</button>
+      <div class="section-title">Filters</div>
+      <div class="chips" id="chipFilters">
+        <div class="chip work active" data-cat="work"><span class="dot"></span>Work</div>
+        <div class="chip school active" data-cat="school"><span class="dot"></span>School</div>
+        <div class="chip personal active" data-cat="personal"><span class="dot"></span>Personal</div>
+        <div class="chip event active" data-cat="event"><span class="dot"></span>Event</div>
+        <div class="chip teaching active" data-cat="teaching"><span class="dot"></span>Teaching</div>
       </div>
-    </div>
 
-    <div class="calendar">
-      <div class="legend" id="legend"></div>
-      <div class="dow">
-        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+      <div class="section-title">Quick actions</div>
+      <div class="chips" style="gap:10px">
+        <button id="newBtn">+ Add Task / Event</button>
+        <button id="pdfBtn" class="ghost">Export PDF (This Week)</button>
+        <button id="rangeBtn" class="ghost">Export Range → PDF</button>
       </div>
-      <div class="grid" id="grid"></div>
-    </div>
-  </main>
+    </aside>
 
-  <!-- Add/Edit Modal -->
-  <div class="modal" id="modal">
-    <div class="card">
-      <h3 style="margin:6px 0 12px">Add Task / Event</h3>
-      <div class="row">
-        <div class="field">
+    <main class="main">
+      <div class="toolbar card">
+        <div class="title">Next 7 days</div>
+        <div class="spacer"></div>
+        <button class="ghost" id="todayBtn">Jump to Today</button>
+        <button id="monthBtn">Month View</button>
+        <button id="newBtnTop">+ Add</button>
+      </div>
+
+      <div id="printHeader" class="print-header card"></div>
+
+      <!-- Week -->
+      <div class="grid" id="daysGrid"></div>
+
+      <!-- Month -->
+      <div class="card" id="monthView" style="display:none">
+        <div class="day-header">
+          <h3 id="monthTitle">Month</h3>
+          <div>
+            <button class="ghost" id="prevMonth">◀</button>
+            <button class="ghost" id="nextMonth">▶</button>
+          </div>
+        </div>
+        <div class="month-head">
+          <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+        </div>
+        <div class="month-grid" id="calendarGrid"></div>
+      </div>
+
+      <!-- Custom range printable block -->
+      <div class="card" id="printRange"></div>
+    </main>
+  </div>
+
+  <!-- Add/Edit -->
+  <dialog id="editor">
+    <form method="dialog" class="modal" id="taskForm">
+      <h3 style="margin:0 0 8px">Add / Edit</h3>
+      <div class="form">
+        <div>
           <label>Title</label>
-          <input id="m_title" placeholder="e.g., Team meeting" />
+          <input id="fTitle" required />
         </div>
-        <div class="field">
-          <label>Category</label>
-          <select id="m_category"></select>
+        <div class="row">
+          <div><label>Date</label><input id="fDate" type="date" required /></div>
+          <div><label>Time</label><input id="fTime" type="time" required /></div>
         </div>
-      </div>
-      <div class="row" style="margin-top:8px">
-        <div class="field">
-          <label>Date</label>
-          <input type="date" id="m_date" />
+        <div class="row">
+          <div>
+            <label>Category</label>
+            <select id="fCat">
+              <option value="work">Work</option>
+              <option value="school">School</option>
+              <option value="personal">Personal</option>
+              <option value="event">Event</option>
+              <option value="teaching">Teaching</option>
+            </select>
+          </div>
+          <div><label>Alert (minutes before)</label><input id="fAlert" type="number" min="0" step="5" placeholder="0 = at time" /></div>
         </div>
-        <div class="field">
-          <label>Time</label>
-          <input type="time" id="m_time" />
-        </div>
+        <div><label>Notes</label><textarea id="fNotes" rows="3" placeholder="Optional"></textarea></div>
       </div>
-      <div class="field" style="margin-top:8px">
-        <label>Notes</label>
-        <textarea id="m_notes" placeholder="Optional details..."></textarea>
+      <div class="footer">
+        <button type="button" class="ghost" id="cancelBtn">Cancel</button>
+        <button id="saveBtn">Save</button>
       </div>
-      <div class="actions">
-        <button class="btn-outline" id="cancelModal">Cancel</button>
-        <button class="btn" id="saveModal">Save</button>
-      </div>
-    </div>
-  </div>
+    </form>
+  </dialog>
 
-  <!-- Range Export Modal -->
-  <div class="modal" id="rangeModal">
-    <div class="card">
-      <h3 style="margin:6px 0 12px">Export Range → PDF</h3>
-      <div class="row">
-        <div class="field">
-          <label>Start date</label>
-          <input type="date" id="r_start" />
-        </div>
-        <div class="field">
-          <label>End date</label>
-          <input type="date" id="r_end" />
+  <!-- Range picker -->
+  <dialog id="rangePicker">
+    <form method="dialog" class="modal">
+      <h3 style="margin:0 0 8px">Export range to PDF</h3>
+      <div class="form">
+        <div class="row">
+          <div><label>From</label><input id="rStart" type="date" required></div>
+          <div><label>To</label><input id="rEnd" type="date" required></div>
         </div>
       </div>
-      <p class="muted" style="margin:8px 0 0">Export includes only <b>visible categories</b> (chips on top).</p>
-      <div class="actions">
-        <button class="btn-outline" id="r_cancel">Cancel</button>
-        <button class="btn" id="r_export">Export PDF</button>
+      <div class="footer">
+        <button type="button" class="ghost" id="rangeCancel">Cancel</button>
+        <button id="rangeExportBtn">Export PDF</button>
       </div>
-    </div>
-  </div>
+    </form>
+  </dialog>
 
-  <script>
-    // ===== Utilities =====
-    const pad = n => String(n).padStart(2, '0');
-    const toISODate = (d)=> `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    const parseISO = (s)=> { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+<script>
+  // ---------- Storage (unified) + migrate old per-page data ----------
+  const NEW_KEY = 'unified_tasks_v1';
+  function mkId(){ return Math.random().toString(36).slice(2,10) }
+  function loadUnified(){
+    const existing = localStorage.getItem(NEW_KEY);
+    if(existing) return JSON.parse(existing);
+    // migrate from old per-page keys if present
+    const map = [['work','cal_work_v1'],['school','cal_school_v1'],['personal','cal_personal_v1']];
+    const merged = [];
+    map.forEach(([cat,key])=>{
+      try{
+        const arr = JSON.parse(localStorage.getItem(key)||'[]');
+        arr.forEach(t => merged.push({
+          id: mkId(), title:t.title, date:t.date, time:t.time,
+          alertMins: Number(t.alertMins||0), notes: t.notes||'', category: cat, done: !!t.done
+        }));
+      }catch{}
+    });
+    return merged;
+  }
+  function saveUnified(list){ localStorage.setItem(NEW_KEY, JSON.stringify(list)); }
 
-    // ===== Storage layer =====
-    const store = {
-      get(key, fallback){ try{ return JSON.parse(localStorage.getItem(key)) ?? fallback }catch{ return fallback } },
-      set(key, val){ localStorage.setItem(key, JSON.stringify(val)) }
+  // ---------- App state ----------
+  let tasks = loadUnified();
+  const selectedCats = new Set(['work','school','personal','event','teaching']);
+
+  // ---------- Utils ----------
+  const now = ()=>new Date();
+  function startOfDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x }
+  function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x }
+  function fmtDay(d){ return d.toLocaleDateString(undefined,{weekday:'long'}) }
+  function fmtDate(d){ return d.toLocaleDateString(undefined,{month:'short', day:'numeric'}) }
+  function fmtDateFull(d){ return d.toLocaleDateString(undefined,{month:'short', day:'numeric', year:'numeric'}) }
+  function escapeHtml(s){ return s.replace(/[&<>\"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]) ) }
+  function mkTask(title,category,date,time,alertMins=0,notes=''){
+    return { id:mkId(), title, category, date, time, alertMins:Number(alertMins||0), notes, done:false };
+  }
+
+  // ---------- Filters (chips) ----------
+  const chipFilters = document.getElementById('chipFilters');
+  chipFilters.addEventListener('click', (e)=>{
+    const c = e.target.closest('.chip'); if(!c) return;
+    const cat = c.dataset.cat;
+    if(selectedCats.has(cat)) selectedCats.delete(cat); else selectedCats.add(cat);
+    c.classList.toggle('active', selectedCats.has(cat));
+    render(); renderMonth();
+  });
+
+  // ---------- Week view ----------
+  const daysGrid = document.getElementById('daysGrid');
+  let weekStart = startOfDay(new Date());
+
+  function render(){
+    const start = weekStart;
+    daysGrid.innerHTML = '';
+    for(let i=0;i<7;i++){
+      const day = addDays(start,i);
+      const dateISO = day.toISOString().slice(0,10);
+      const dayTasks = tasks
+        .filter(t => t.date===dateISO && selectedCats.has(t.category))
+        .sort((a,b)=> a.time.localeCompare(b.time));
+
+      const col = document.createElement('div');
+      col.className='card';
+      col.id = 'day-'+dateISO;
+
+      const isToday = startOfDay(new Date()).getTime()===startOfDay(day).getTime();
+      col.innerHTML = `
+        <div class="day-header">
+          <h3>${i===0? 'Today' : fmtDay(day)} <span style="color:var(--muted);font-weight:500">${fmtDate(day)}</span>${isToday?'<span class="today-chip">TODAY</span>':''}</h3>
+          <button class="ghost" data-add="${dateISO}">+ Add</button>
+        </div>
+        <div class="list ${dayTasks.length? '':'empty'}">
+          ${dayTasks.length? '' : '<div class="empty">No tasks yet</div>'}
+        </div>`;
+      if(isToday) col.classList.add('focus-day');
+
+      const listEl = col.querySelector('.list');
+      dayTasks.forEach(t=> listEl.appendChild(renderTask(t)) );
+      col.querySelector('[data-add]').onclick = (e)=> openEditor({date:e.target.dataset.add});
+      daysGrid.appendChild(col);
     }
+    updatePrintHeader();
+  }
 
-    // ===== Categories =====
-    const DEFAULT_CATEGORIES = [
-      { id:'personal', name:'Personal', color:getComputedStyle(document.documentElement).getPropertyValue('--clr-personal').trim() },
-      { id:'work',     name:'Work',     color:getComputedStyle(document.documentElement).getPropertyValue('--clr-work').trim() },
-      { id:'school',   name:'School',   color:getComputedStyle(document.documentElement).getPropertyValue('--clr-school').trim() },
-      { id:'event',    name:'Event',    color:getComputedStyle(document.documentElement).getPropertyValue('--clr-event').trim() },
+  function renderTask(t){
+    const wrap = document.createElement('div');
+    wrap.className='task';
+    const pillClass = {work:'p-work',school:'p-school',personal:'p-personal',event:'p-event',teaching:'p-teaching'}[t.category] || 'p-personal';
+    wrap.innerHTML = `
+      <div>
+        <div class="title">${escapeHtml(t.title)} <span class="pill ${pillClass}">${t.category}</span></div>
+        <div class="meta">${t.time} • ${t.notes? escapeHtml(t.notes): ''}</div>
+      </div>
+      <div class="actions">
+        <button class="icon" title="Done" data-done="${t.id}">✔</button>
+        <button class="icon" title="Edit" data-edit="${t.id}">✎</button>
+        <button class="icon" title="Delete" data-del="${t.id}">🗑</button>
+      </div>`;
+    wrap.querySelector('[data-done]').onclick = ()=>{ t.done=!t.done; saveUnified(tasks); render(); renderMonth(); };
+    wrap.querySelector('[data-edit]').onclick = ()=> openEditor(t);
+    wrap.querySelector('[data-del]').onclick = ()=>{ if(confirm('Delete this item?')){ tasks = tasks.filter(x=>x.id!==t.id); saveUnified(tasks); render(); renderMonth(); } };
+    if(t.done){ wrap.style.opacity=.6; wrap.style.textDecoration='line-through' }
+    return wrap;
+  }
+
+  // ---------- Month view ----------
+  const monthBtn = document.getElementById('monthBtn');
+  const monthView = document.getElementById('monthView');
+  const monthTitle = document.getElementById('monthTitle');
+  const calendarGrid = document.getElementById('calendarGrid');
+  let monthCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+  function renderMonth(){
+    monthTitle.textContent = 'Calendar — ' + monthCursor.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+    calendarGrid.innerHTML = '';
+
+    const firstDow = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1).getDay();
+    const daysIn = new Date(monthCursor.getFullYear(), monthCursor.getMonth()+1, 0).getDate();
+    for(let i=0;i<firstDow;i++) calendarGrid.appendChild(document.createElement('div'));
+
+    const todayISO = startOfDay(new Date()).toISOString().slice(0,10);
+
+    for(let d=1; d<=daysIn; d++){
+      const dt = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), d);
+      const dateISO = dt.toISOString().slice(0,10);
+      const count = tasks.filter(t=> t.date===dateISO && selectedCats.has(t.category)).length;
+
+      const cell = document.createElement('div');
+      cell.className='daycell';
+      if(dateISO===todayISO) cell.classList.add('month-today');
+
+      const top = document.createElement('div'); top.style.display='flex'; top.style.alignItems='center'; top.style.gap='6px';
+      const dn  = document.createElement('div'); dn.className='daynum'; dn.textContent=d;
+      const ct  = document.createElement('div'); ct.className='count'; ct.textContent = count>0? String(count): '';
+      top.appendChild(dn); top.appendChild(ct);
+      cell.appendChild(top);
+
+      cell.title = 'Add item on '+dateISO;
+      cell.onclick = ()=> openEditor({date:dateISO});  // click 17 → open prefilled
+
+      calendarGrid.appendChild(cell);
+    }
+  }
+
+  document.getElementById('prevMonth').onclick = ()=>{ monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth()-1, 1); renderMonth(); };
+  document.getElementById('nextMonth').onclick = ()=>{ monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth()+1, 1); renderMonth(); };
+  monthBtn.onclick = ()=>{
+    const showing = monthView.style.display!=='none';
+    monthView.style.display = showing ? 'none' : 'block';
+    if(!showing) renderMonth();
+  };
+
+  // ---------- Dialogs / Save ----------
+  const dlg = document.getElementById('editor');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const fTitle = document.getElementById('fTitle');
+  const fDate  = document.getElementById('fDate');
+  const fTime  = document.getElementById('fTime');
+  const fCat   = document.getElementById('fCat');
+  const fAlert = document.getElementById('fAlert');
+  const fNotes = document.getElementById('fNotes');
+  let editingId = null;
+
+  dlg.addEventListener('close', ()=> document.body.classList.remove('modal-open'));
+
+  function openEditor(seed={}){
+    editingId = seed.id || null;
+    fTitle.value = seed.title || '';
+    fDate.value  = seed.date || new Date().toISOString().slice(0,10);
+    fTime.value  = seed.time || new Date().toTimeString().slice(0,5);
+    fCat.value   = seed.category || 'personal';
+    fAlert.value = (seed.alertMins ?? 0);
+    fNotes.value = seed.notes || '';
+    dlg.showModal();
+    document.body.classList.add('modal-open');
+  }
+  document.getElementById('newBtn').onclick = ()=> openEditor({});
+  document.getElementById('newBtnTop').onclick = ()=> openEditor({});
+  cancelBtn.onclick = (e)=>{ e.preventDefault(); dlg.close(); };
+
+  document.getElementById('saveBtn').addEventListener('click', (e)=>{
+    e.preventDefault();
+    const data = {
+      title: fTitle.value.trim(),
+      date:  fDate.value,
+      time:  fTime.value,
+      category: fCat.value,
+      alertMins: Number(fAlert.value||0),
+      notes: fNotes.value.trim()
+    };
+    if(!data.title) return;
+    if(editingId){
+      const idx = tasks.findIndex(x=>x.id===editingId);
+      tasks[idx] = { ...tasks[idx], ...data };
+    } else {
+      tasks.push(mkTask(data.title, data.category, data.date, data.time, data.alertMins, data.notes));
+    }
+    saveUnified(tasks); dlg.close(); render(); renderMonth(); scheduleAll();
+  });
+
+  // ---------- Jump to Today ----------
+  document.getElementById('todayBtn').onclick = ()=>{
+    weekStart = startOfDay(new Date());
+    monthCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    render();
+    const iso = weekStart.toISOString().slice(0,10);
+    const el = document.getElementById('day-'+iso);
+    window.scrollTo({top:0,behavior:'smooth'});
+    if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+    if(monthView.style.display!=='none') renderMonth();
+  };
+
+  // ---------- PDF (this week) ----------
+  const pdfBtn = document.getElementById('pdfBtn');
+  if(pdfBtn){ pdfBtn.onclick = ()=> { updatePrintHeader(); window.print(); }; }
+  function updatePrintHeader(){
+    const header = document.getElementById('printHeader');
+    const start = startOfDay(weekStart);
+    const end = addDays(start,6);
+    header.textContent = `Schedule — ${fmtDateFull(start)} – ${fmtDateFull(end)}`;
+  }
+
+  // ---------- Export range → PDF ----------
+  const rangeDlg = document.getElementById('rangePicker');
+  const rangeBtn = document.getElementById('rangeBtn');
+  const rangeCancel = document.getElementById('rangeCancel');
+  const rStart = document.getElementById('rStart');
+  const rEnd   = document.getElementById('rEnd');
+  const rangeExportBtn = document.getElementById('rangeExportBtn');
+  const printRange = document.getElementById('printRange');
+
+  rangeDlg.addEventListener('close', ()=> document.body.classList.remove('modal-open'));
+
+  rangeBtn.onclick = ()=>{
+    const t = new Date(); const iso=(d)=>d.toISOString().slice(0,10);
+    const e = new Date(t); e.setDate(e.getDate()+6);
+    rStart.value = iso(t); rEnd.value = iso(e);
+    rangeDlg.showModal(); document.body.classList.add('modal-open');
+  };
+  rangeCancel.onclick = (e)=>{ e.preventDefault(); rangeDlg.close(); };
+
+  rangeExportBtn.addEventListener('click', (e)=>{
+    e.preventDefault();
+    if(!rStart.value || !rEnd.value) return;
+    const s = new Date(rStart.value); const eDate = new Date(rEnd.value);
+    if(s > eDate){ alert('Start date must be before End date'); return; }
+    rangeDlg.close();
+    renderPrintRange(rStart.value, rEnd.value);
+    document.body.classList.add('range-print');
+    window.print();
+  });
+
+  window.addEventListener('afterprint', ()=>{
+    document.body.classList.remove('range-print');
+    printRange.style.display = 'none';
+    printRange.innerHTML = '';
+  });
+
+  function renderPrintRange(startISO, endISO){
+    const s = new Date(startISO); const e = new Date(endISO);
+    const iso = (d)=>d.toISOString().slice(0,10);
+    let html = `<h3 style="margin:0 0 8px">Schedule — ${fmtDateFull(s)} to ${fmtDateFull(e)}</h3>`;
+    let any = false;
+    for(let dt = new Date(s); dt <= e; dt.setDate(dt.getDate()+1)){
+      const key = iso(dt);
+      const dayList = tasks
+        .filter(t=> t.date===key && selectedCats.has(t.category))
+        .sort((a,b)=> a.time.localeCompare(b.time));
+      if(dayList.length===0) continue;
+      any = true;
+      html += `<div class="card" style="margin-top:8px;padding:12px">
+        <div style="font-weight:700;margin-bottom:6px">${dt.toLocaleDateString(undefined,{weekday:'bold',month:'short',day:'numeric'})}</div>
+        ${dayList.map(t=>`
+          <div style="display:flex;gap:8px;align-items:flex-start;margin:6px 0">
+            <div style="min-width:64px">${t.time}</div>
+            <div>
+              <div style="font-weight:600">${escapeHtml(t.title)} <span style="font-size:11px;opacity:.7">[${t.category}]</span></div>
+              <div style="color:#666">${t.notes? escapeHtml(t.notes): ''}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>`;
+    }
+    if(!any){ html += `<div class="card" style="margin-top:8px;padding:12px;color:#666">No items in this range.</div>`; }
+    printRange.innerHTML = html;
+    printRange.style.display = 'block';
+  }
+
+  // ---------- Notifications ----------
+  async function ensurePermission(){ if(!('Notification' in window)) return false; if(Notification.permission==='granted') return true; if(Notification.permission!=='denied'){ const p = await Notification.requestPermission(); return p==='granted'; } return false; }
+  function whenToNotify(task){ const dt = new Date(task.date + 'T' + task.time + ':00'); return dt.getTime() - (task.alertMins||0)*60000; }
+  let timers = []; function clearTimers(){ timers.forEach(clearTimeout); timers=[] }
+  function scheduleAll(){ clearTimers(); ensurePermission(); const nowMs=Date.now(); tasks.forEach(t=>{ const fireAt=whenToNotify(t); if(fireAt>nowMs){ timers.push(setTimeout(()=>fireNotify(t), fireAt-nowMs)); } }); }
+  function fireNotify(t){ try{ if('Notification' in window && Notification.permission==='granted'){ const n = new Notification(t.title,{ body: `${t.time} • ${t.category}${t.notes? ' • '+t.notes:''}` }); setTimeout(()=> n.close(), 8000);} else { alert(`[Reminder] ${t.title} @ ${t.time}`)} }catch(e){ console.warn(e)} }
+
+  // ---------- Seed if empty ----------
+  if(tasks.length===0){
+    const today=new Date(); const iso=d=>d.toISOString().slice(0,10);
+    const d1=new Date(today); d1.setDate(d1.getDate()+1); d1.setHours(18,30,0,0);
+    const d2=new Date(today); d2.setDate(d2.getDate()+5); d2.setHours(19,0,0,0);
+    tasks=[
+      mkTask('Study BBU','school', iso(d1), d1.toTimeString().slice(0,5), 0, 'Focus on DB hw'),
+      mkTask('C# class','school', iso(d2), d2.toTimeString().slice(0,5), 0, 're class')
     ];
+    saveUnified(tasks);
+  }
 
-    let categories = store.get('mc.categories', DEFAULT_CATEGORIES);
-
-    // Pages: 'dashboard' (all), or one of the category ids
-    let activePage = store.get('mc.activePage', 'dashboard');
-
-    // Multi-filter chips state (legend). Default follows the active page.
-    let activeCategoryIds = new Set(store.get('mc.activeCats', (activePage==='dashboard' ? categories.map(c=>c.id) : [activePage])));
-
-    let events = store.get('mc.events', []); // {id,title,date,time,categoryId,notes}
-
-    // current view state
-    let viewDate = new Date();
-
-    // ===== DOM refs =====
-    const grid = document.getElementById('grid');
-    const titleEl = document.getElementById('title');
-    const prevBtn = document.getElementById('prevMonth');
-    const nextBtn = document.getElementById('nextMonth');
-    const pageList = document.getElementById('pageList');
-    const legend = document.getElementById('legend');
-
-    // Modal refs
-    const modal = document.getElementById('modal');
-    const m_title = document.getElementById('m_title');
-    const m_category = document.getElementById('m_category');
-    const m_date = document.getElementById('m_date');
-    const m_time = document.getElementById('m_time');
-    const m_notes = document.getElementById('m_notes');
-
-    const addBtn = document.getElementById('addBtn');
-    const cancelModal = document.getElementById('cancelModal');
-    const saveModal = document.getElementById('saveModal');
-
-    // Range export modal
-    const rangeModal = document.getElementById('rangeModal');
-    const r_start = document.getElementById('r_start');
-    const r_end = document.getElementById('r_end');
-    const r_cancel = document.getElementById('r_cancel');
-    const r_export = document.getElementById('r_export');
-
-    const exportWeekBtn = document.getElementById('exportWeek');
-    const exportRangeBtn = document.getElementById('exportRange');
-
-    const downloadJson = document.getElementById('downloadJson');
-    const restoreJson = document.getElementById('restoreJson');
-
-    // ===== Page & Category Rendering =====
-    function setPage(id){
-      activePage = id; store.set('mc.activePage', id);
-      activeCategoryIds = new Set(id==='dashboard' ? categories.map(c=>c.id) : [id]);
-      store.set('mc.activeCats', Array.from(activeCategoryIds));
-      updateTitle(); renderCategoriesUI(); renderMonth();
-    }
-
-    function renderCategoriesUI(){
-      pageList.innerHTML = '';
-      legend.innerHTML = '';
-
-      const pages = [{ id:'dashboard', name:'My Calendar', color: 'var(--accent)' }, ...categories];
-
-      pages.forEach(p => {
-        // left page list (radio-style single select)
-        const el = document.createElement('div');
-        el.className = 'page' + (activePage===p.id ? ' active' : '');
-        el.innerHTML = `<div style="display:flex; align-items:center; gap:10px"><span class="dot" style="background:${p.color}"></span><div>${p.name}</div></div>`;
-        el.addEventListener('click', ()=> setPage(p.id));
-        pageList.appendChild(el);
-      });
-
-      // top legend = multi-select filters for export/visibility
-      categories.forEach(cat => {
-        const f = document.createElement('div');
-        f.className = 'filter' + (activeCategoryIds.has(cat.id)?' active':'');
-        f.innerHTML = `<span class="badge" style="background:${cat.color}"></span><span>${cat.name}</span>`;
-        f.addEventListener('click', ()=>{
-          if(activeCategoryIds.has(cat.id)) activeCategoryIds.delete(cat.id); else activeCategoryIds.add(cat.id);
-          if(activeCategoryIds.size===0){ activeCategoryIds.add(cat.id); }
-          store.set('mc.activeCats', Array.from(activeCategoryIds));
-          renderCategoriesUI(); renderMonth();
-        });
-        legend.appendChild(f);
-      });
-
-      // category dropdown in modal
-      m_category.innerHTML = categories.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
-    }
-
-    function updateTitle(){
-      const monthName = viewDate.toLocaleString(undefined,{month:'long'});
-      const year = viewDate.getFullYear();
-      let pageLabel = 'My Calendar';
-      if(activePage!=='dashboard'){
-        pageLabel = categories.find(c=>c.id===activePage)?.name || 'My Calendar';
-      }
-      titleEl.textContent = `${pageLabel} — ${monthName} ${year}`;
-    }
-
-    // ===== Calendar Grid =====
-    function getMonthMatrix(year, month){
-      // returns 6 weeks x 7 days matrix of Date objects
-      const first = new Date(year, month, 1);
-      const start = new Date(first);
-      // move to Sunday of first week
-      start.setDate(first.getDate() - first.getDay());
-      const weeks = [];
-      for(let w=0; w<6; w++){
-        const row = [];
-        for(let d=0; d<7; d++){
-          const curr = new Date(start);
-          curr.setDate(start.getDate() + w*7 + d);
-          row.push(curr);
-        }
-        weeks.push(row);
-      }
-      return weeks;
-    }
-
-    function eventsOn(date){
-      const iso = toISODate(date);
-      return events.filter(e => e.date===iso && activeCategoryIds.has(e.categoryId));
-    }
-
-    function renderMonth(){
-      updateTitle();
-      grid.innerHTML = '';
-      const y = viewDate.getFullYear();
-      const m = viewDate.getMonth();
-      const matrix = getMonthMatrix(y,m);
-      const todayISO = toISODate(new Date());
-
-      matrix.flat().forEach(d =>{
-        const cell = document.createElement('div');
-        const inMonth = d.getMonth()===m;
-        cell.className = 'cell' + (!inMonth? ' out':'') + (toISODate(d)===todayISO? ' today':'');
-        cell.innerHTML = `<div class="day">${d.getDate()}</div>`;
-
-        eventsOn(d).sort((a,b)=> (a.time||'99:99').localeCompare(b.time||'99:99')).forEach(ev =>{
-          const cat = categories.find(c=>c.id===ev.categoryId);
-          const pill = document.createElement('div');
-          pill.className = 'pill';
-          pill.innerHTML = `<span class="badge" style="background:${cat?.color}"></span><span>${ev.time? ev.time+' · ' : ''}${ev.title}</span>`;
-          cell.appendChild(pill);
-        });
-
-        cell.addEventListener('click', ()=> openModal({date: toISODate(d)}));
-        grid.appendChild(cell);
-      });
-    }
-
-    // ===== Modal logic =====
-    function openModal(prefill={}){
-      m_title.value = prefill.title || '';
-      m_date.value = prefill.date || toISODate(new Date());
-      m_time.value = prefill.time || '';
-      m_notes.value = prefill.notes || '';
-      // default category follows page: if page is dashboard -> keep previously selected or first category
-      m_category.value = prefill.categoryId || (activePage==='dashboard' ? (categories[0]?.id) : activePage);
-      modal.classList.add('open');
-    }
-    function closeModal(){ modal.classList.remove('open'); }
-
-    addBtn.addEventListener('click', ()=> openModal({ date: toISODate(new Date()) }));
-    cancelModal.addEventListener('click', closeModal);
-
-    saveModal.addEventListener('click', ()=>{
-      const title = m_title.value.trim(); if(!title){ m_title.focus(); return; }
-      const e = {
-        id: crypto.randomUUID?.() || String(Date.now()),
-        title,
-        date: m_date.value,
-        time: m_time.value || '',
-        categoryId: m_category.value,
-        notes: m_notes.value.trim()
-      };
-      events.push(e); store.set('mc.events', events);
-      closeModal(); renderMonth();
-    });
-
-    // ===== Month navigation =====
-    prevBtn.addEventListener('click', ()=>{ viewDate.setMonth(viewDate.getMonth()-1); renderMonth(); });
-    nextBtn.addEventListener('click', ()=>{ viewDate.setMonth(viewDate.getMonth()+1); renderMonth(); });
-
-    // ===== Export: This Week (no print dialog) =====
-    function startOfWeek(d){ const x=new Date(d); x.setDate(d.getDate()-d.getDay()); x.setHours(0,0,0,0); return x; }
-    function endOfWeek(d){ const x=startOfWeek(d); x.setDate(x.getDate()+6); x.setHours(23,59,59,999); return x; }
-    function inRange(dateISO, a, b){ const t=parseISO(dateISO).getTime(); return t>=a.getTime() && t<=b.getTime(); }
-
-    function collectEvents(startDate, endDate){
-      // filtered by active categories
-      const rows = events
-        .filter(e => activeCategoryIds.has(e.categoryId) && inRange(e.date, startDate, endDate))
-        .sort((a,b)=> a.date===b.date ? (a.time||'99:99').localeCompare(b.time||'99:99') : a.date.localeCompare(b.date))
-        .map(e=>{
-          const c = categories.find(x=>x.id===e.categoryId);
-          return [ e.date, e.time || '—', c?.name || '', e.title, e.notes || '' ];
-        });
-      return rows;
-    }
-
-    async function exportPDF({startDate, endDate, filename}){
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({unit:'pt', format:'a4'});
-
-      const pageLabel = (activePage==='dashboard') ? 'All Categories' : (categories.find(c=>c.id===activePage)?.name || 'All');
-      const title = `Calendar Export — ${pageLabel}`;
-      const sub = `${startDate.toDateString()}  →  ${endDate.toDateString()}`;
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.text(title, 40, 40);
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.setTextColor(120);
-      doc.text(sub, 40, 60);
-      doc.setTextColor(20);
-
-      const rows = collectEvents(startDate, endDate);
-      if(rows.length===0){
-        doc.text('No events in this range.', 40, 92);
-      }else{
-        doc.autoTable({
-          startY: 84,
-          head: [['Date','Time','Category','Title','Notes']],
-          body: rows,
-          styles: { fontSize: 10, cellPadding: 6 },
-          headStyles: { fillColor:[46, 74, 120] },
-          theme: 'grid',
-        });
-      }
-
-      doc.save(filename);
-    }
-
-    exportWeekBtn.addEventListener('click', ()=>{
-      const now = new Date();
-      const a = startOfWeek(now); const b = endOfWeek(now);
-      exportPDF({startDate:a, endDate:b, filename:`calendar-week-${a.getFullYear()}-${pad(a.getMonth()+1)}-${pad(a.getDate())}.pdf`});
-    });
-
-    // ===== Export Range modal =====
-    exportRangeBtn.addEventListener('click', ()=>{
-      const todayISO = toISODate(new Date());
-      r_start.value = todayISO;
-      r_end.value = todayISO;
-      rangeModal.classList.add('open');
-    });
-    r_cancel.addEventListener('click', ()=> rangeModal.classList.remove('open'));
-    r_export.addEventListener('click', ()=>{
-      const a = parseISO(r_start.value);
-      const b = parseISO(r_end.value);
-      if(!(a instanceof Date) || !(b instanceof Date) || isNaN(a) || isNaN(b) || a>b){
-        alert('Please choose a valid date range.');
-        return;
-      }
-      rangeModal.classList.remove('open');
-      exportPDF({startDate:a, endDate:b, filename:`calendar-${r_start.value}_to_${r_end.value}.pdf`});
-    });
-
-    // ===== Backup/Restore JSON (optional) =====
-    downloadJson.addEventListener('click', ()=>{
-      const data = { categories, activePage, activeCategoryIds: Array.from(activeCategoryIds), events };
-      const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href=url; a.download='calendar-backup.json'; a.click(); URL.revokeObjectURL(url);
-    });
-    restoreJson.addEventListener('click', ()=>{
-      const inp = document.createElement('input'); inp.type='file'; inp.accept='.json,application/json';
-      inp.onchange = ()=>{
-        const file = inp.files[0]; if(!file) return;
-        const fr = new FileReader(); fr.onload = ()=>{
-          try{
-            const data = JSON.parse(fr.result);
-            categories = data.categories || DEFAULT_CATEGORIES;
-            activePage = data.activePage || 'dashboard';
-            activeCategoryIds = new Set(data.activeCategoryIds || (activePage==='dashboard' ? categories.map(c=>c.id) : [activePage]));
-            events = data.events || [];
-            store.set('mc.categories', categories);
-            store.set('mc.activePage', activePage);
-            store.set('mc.activeCats', Array.from(activeCategoryIds));
-            store.set('mc.events', events);
-            renderCategoriesUI(); renderMonth();
-          }catch(err){ alert('Invalid JSON file.'); }
-        };
-        fr.readAsText(file);
-      };
-      inp.click();
-    });
-
-    // ===== Init =====
-    function init(){
-      renderCategoriesUI();
-      renderMonth();
-    }
-    init();
-  </script>
+  // ---------- Boot ----------
+  render(); renderMonth(); scheduleAll();
+</script>
 </body>
 </html>
