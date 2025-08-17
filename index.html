@@ -13,7 +13,7 @@
   *{box-sizing:border-box} html,body{height:100%}
   body{margin:0;background:#0f1115;color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
 
-  .app{display:grid;grid-template-columns:280px 1fr;gap:20px;max-width:1200px;margin:24px auto;padding:0 16px}
+  .app{display:grid;grid-template-columns:280px  1fr;gap:20px;max-width:1200px;margin:24px auto;padding:0 16px}
   .sidebar{background:var(--panel);border-radius:var(--radius);padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
   .brand{display:flex;align-items:center;gap:10px;margin-bottom:14px}
   .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--primary)}
@@ -71,12 +71,29 @@
   .form{display:grid;gap:10px}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   label{font-size:13px;color:var(--muted)}
-  input,textarea{width:100%;padding:10px;border-radius:10px;background:#0f131a;border:1px solid #243047;color:var(--text)}
+  input,select,textarea{width:100%;padding:10px;border-radius:10px;background:#0f131a;border:1px solid #243047;color:var(--text)}
   .footer{display:flex;gap:10px;justify-content:flex-end;margin-top:6px}
   .empty{color:var(--muted);font-size:13px;padding:6px}
 
+  /* Blur page when any dialog is open */
+  body.modal-open .app{
+    filter: blur(6px) brightness(0.92);
+    transform: scale(0.995);
+    transition: filter .18s ease, transform .18s ease;
+  }
+  dialog::backdrop{
+    background: rgba(0,0,0,.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    animation: fadeInBackdrop .18s ease;
+  }
+  dialog{ animation: dialogPop .18s ease; }
+  @keyframes fadeInBackdrop{ from{background:rgba(0,0,0,0)} to{background:rgba(0,0,0,.55)} }
+  @keyframes dialogPop{ from{ transform:scale(.98); opacity:0 } to{ transform:scale(1); opacity:1 } }
+
   /* Print */
   .print-header{display:none}
+  #printRange{display:none}
   @media print{
     body{background:#fff !important;color:#111 !important}
     .app{grid-template-columns:1fr !important}
@@ -86,6 +103,10 @@
     .grid{grid-template-columns:1fr !important}
     .print-header{display:block;margin-bottom:12px}
     .card{break-inside:avoid;page-break-inside:avoid}
+
+    /* when exporting a custom range, show only that block */
+    body.range-print .main > *:not(#printRange){ display:none !important }
+    body.range-print #printRange{ display:block !important }
   }
 
   /* background grid + name */
@@ -111,7 +132,8 @@
       <div class="section-title">Quick actions</div>
       <div class="nav">
         <button id="newBtn">+ Add Task / Event</button>
-        <button id="pdfBtn" class="ghost">Export PDF</button>
+        <button id="pdfBtn" class="ghost">Export PDF (This Week)</button>
+        <button id="rangeBtn" class="ghost">Export Range → PDF</button>
       </div>
     </aside>
 
@@ -143,10 +165,13 @@
         </div>
         <div class="month-grid" id="calendarGrid"></div>
       </div>
+
+      <!-- Custom range printable block -->
+      <div class="card" id="printRange"></div>
     </main>
   </div>
 
-  <!-- Editor -->
+  <!-- Add/Edit -->
   <dialog id="editor">
     <form method="dialog" class="modal" id="taskForm">
       <h3 style="margin:0 0 8px">Add / Edit</h3>
@@ -160,6 +185,16 @@
           <div><label>Time</label><input id="fTime" type="time" required /></div>
         </div>
         <div class="row">
+          <div>
+            <label>Type</label>
+            <select id="fType">
+              <option value="calendar">Calendar</option>
+              <option value="event">Event</option>
+              <option value="personal">Personal</option>
+              <option value="task">Task</option>
+              <option value="note">Note</option>
+            </select>
+          </div>
           <div><label>Alert (minutes before)</label><input id="fAlert" type="number" min="0" step="5" placeholder="0 = at time" /></div>
         </div>
         <div><label>Notes</label><textarea id="fNotes" rows="3" placeholder="Optional"></textarea></div>
@@ -167,6 +202,23 @@
       <div class="footer">
         <button type="button" class="ghost" id="cancelBtn">Cancel</button>
         <button id="saveBtn">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Range picker -->
+  <dialog id="rangePicker">
+    <form method="dialog" class="modal">
+      <h3 style="margin:0 0 8px">Export range to PDF</h3>
+      <div class="form">
+        <div class="row">
+          <div><label>From</label><input id="rStart" type="date" required></div>
+          <div><label>To</label><input id="rEnd" type="date" required></div>
+        </div>
+      </div>
+      <div class="footer">
+        <button type="button" class="ghost" id="rangeCancel">Cancel</button>
+        <button id="rangeExportBtn">Export PDF</button>
       </div>
     </form>
   </dialog>
@@ -206,8 +258,8 @@
   // --------- Utilities ---------
   function cap(s){ return s[0].toUpperCase()+s.slice(1) }
   function mkId(){ return Math.random().toString(36).slice(2,10) }
-  function mkTask(title,date,time,alertMins=0,notes=''){
-    return { id:mkId(), title, date, time, alertMins:Number(alertMins||0), notes, done:false };
+  function mkTask(title,date,time,alertMins=0,notes='',type='calendar'){
+    return { id:mkId(), title, date, time, alertMins:Number(alertMins||0), notes, type, done:false };
   }
   const now = ()=>new Date();
   function startOfDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x }
@@ -257,10 +309,11 @@
   function renderTask(t){
     const wrap = document.createElement('div');
     wrap.className='task';
+    const typeText = t.type ? ` • ${t.type}` : '';
     wrap.innerHTML = `
       <div>
         <div class="title">${escapeHtml(t.title)}</div>
-        <div class="meta">${t.time} • ${t.notes? escapeHtml(t.notes): ''}</div>
+        <div class="meta">${t.time}${typeText} • ${t.notes? escapeHtml(t.notes): ''}</div>
       </div>
       <div class="actions">
         <button class="icon" title="Done" data-done="${t.id}">✔</button>
@@ -307,7 +360,7 @@
       cell.appendChild(top);
 
       cell.title = 'Add item on '+dateISO;
-      cell.onclick = ()=> openEditor({date:dateISO});
+      cell.onclick = ()=> openEditor({date:dateISO});   // click day 17 → open add dialog preset to that date
 
       calendarGrid.appendChild(cell);
     }
@@ -321,28 +374,34 @@
     if(!showing) renderMonth();
   };
 
-  // --------- Dialog / Save ---------
+  // --------- Dialogs / Save ---------
   const dlg = document.getElementById('editor');
   const cancelBtn = document.getElementById('cancelBtn');
-  cancelBtn.onclick = (e)=>{ e.preventDefault(); dlg.close(); };
   const fTitle = document.getElementById('fTitle');
   const fDate  = document.getElementById('fDate');
   const fTime  = document.getElementById('fTime');
+  const fType  = document.getElementById('fType');
   const fAlert = document.getElementById('fAlert');
   const fNotes = document.getElementById('fNotes');
   let editingId = null;
+
+  // blur on open/close
+  dlg.addEventListener('close', ()=> document.body.classList.remove('modal-open'));
 
   function openEditor(seed={}){
     editingId = seed.id || null;
     fTitle.value = seed.title || '';
     fDate.value  = seed.date || new Date().toISOString().slice(0,10);
     fTime.value  = seed.time || new Date().toTimeString().slice(0,5);
+    fType.value  = seed.type || 'calendar';
     fAlert.value = (seed.alertMins ?? 0);
     fNotes.value = seed.notes || '';
     dlg.showModal();
+    document.body.classList.add('modal-open');
   }
   document.getElementById('newBtn').onclick = ()=> openEditor({});
   document.getElementById('newBtnTop').onclick = ()=> openEditor({});
+  cancelBtn.onclick = (e)=>{ e.preventDefault(); dlg.close(); };
 
   document.getElementById('saveBtn').addEventListener('click', (e)=>{
     e.preventDefault();
@@ -350,6 +409,7 @@
       title: fTitle.value.trim(),
       date:  fDate.value,
       time:  fTime.value,
+      type:  fType.value,
       alertMins: Number(fAlert.value||0),
       notes: fNotes.value.trim()
     };
@@ -358,7 +418,7 @@
       const idx = tasks.findIndex(x=>x.id===editingId);
       tasks[idx] = { ...tasks[idx], ...data };
     } else {
-      tasks.push(mkTask(data.title, data.date, data.time, data.alertMins, data.notes));
+      tasks.push(mkTask(data.title, data.date, data.time, data.alertMins, data.notes, data.type));
     }
     saveTasks(currentCal, tasks); dlg.close(); render(); renderMonth(); scheduleAll();
   });
@@ -375,7 +435,7 @@
     if(monthView.style.display!=='none') renderMonth();
   };
 
-  // --------- PDF ---------
+  // --------- PDF (this week) ---------
   const pdfBtn = document.getElementById('pdfBtn');
   if(pdfBtn){ pdfBtn.onclick = ()=> { updatePrintHeader(); window.print(); }; }
   function updatePrintHeader(){
@@ -385,12 +445,81 @@
     header.textContent = `${cap(currentCal)} — ${fmtDateFull(start)} – ${fmtDateFull(end)}`;
   }
 
+  // --------- Export range → PDF ---------
+  const rangeDlg = document.getElementById('rangePicker');
+  const rangeBtn = document.getElementById('rangeBtn');
+  const rangeCancel = document.getElementById('rangeCancel');
+  const rStart = document.getElementById('rStart');
+  const rEnd   = document.getElementById('rEnd');
+  const rangeExportBtn = document.getElementById('rangeExportBtn');
+  const printRange = document.getElementById('printRange');
+
+  rangeDlg.addEventListener('close', ()=> document.body.classList.remove('modal-open'));
+
+  rangeBtn.onclick = ()=>{
+    // defaults: today → today+6
+    const t = new Date(); const iso=(d)=>d.toISOString().slice(0,10);
+    const e = new Date(t); e.setDate(e.getDate()+6);
+    rStart.value = iso(t); rEnd.value = iso(e);
+    rangeDlg.showModal(); document.body.classList.add('modal-open');
+  };
+  rangeCancel.onclick = (e)=>{ e.preventDefault(); rangeDlg.close(); };
+
+  rangeExportBtn.addEventListener('click', (e)=>{
+    e.preventDefault();
+    if(!rStart.value || !rEnd.value) return;
+    const s = new Date(rStart.value); const eDate = new Date(rEnd.value);
+    if(s > eDate){ alert('Start date must be before End date'); return; }
+    rangeDlg.close();
+    renderPrintRange(rStart.value, rEnd.value);
+    document.body.classList.add('range-print');
+    window.print();
+  });
+
+  window.addEventListener('afterprint', ()=>{
+    // cleanup after printing range
+    document.body.classList.remove('range-print');
+    printRange.style.display = 'none';
+    printRange.innerHTML = '';
+  });
+
+  function renderPrintRange(startISO, endISO){
+    // group tasks by day between [start, end]
+    const s = new Date(startISO); const e = new Date(endISO);
+    const iso = (d)=>d.toISOString().slice(0,10);
+    let html = `<h3 style="margin:0 0 8px">${cap(currentCal)} — ${fmtDateFull(s)} to ${fmtDateFull(e)}</h3>`;
+    let any = false;
+    for(let dt = new Date(s); dt <= e; dt.setDate(dt.getDate()+1)){
+      const key = iso(dt);
+      const dayList = tasks.filter(t=> t.date===key).sort((a,b)=> a.time.localeCompare(b.time));
+      if(dayList.length===0) continue;
+      any = true;
+      html += `<div class="card" style="margin-top:8px;padding:12px">
+        <div style="font-weight:700;margin-bottom:6px">${dt.toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'})}</div>
+        ${dayList.map(t=>`
+          <div style="display:flex;gap:8px;align-items:flex-start;margin:6px 0">
+            <div style="min-width:64px">${t.time}</div>
+            <div>
+              <div style="font-weight:600">${escapeHtml(t.title)}</div>
+              <div style="color:#666">${t.type?('['+t.type+'] '):''}${t.notes? escapeHtml(t.notes): ''}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>`;
+    }
+    if(!any){
+      html += `<div class="card" style="margin-top:8px;padding:12px;color:#666">No items in this range.</div>`;
+    }
+    printRange.innerHTML = html;
+    printRange.style.display = 'block';
+  }
+
   // --------- Notifications ---------
   async function ensurePermission(){ if(!('Notification' in window)) return false; if(Notification.permission==='granted') return true; if(Notification.permission!=='denied'){ const p = await Notification.requestPermission(); return p==='granted'; } return false; }
   function whenToNotify(task){ const dt = new Date(task.date + 'T' + task.time + ':00'); return dt.getTime() - (task.alertMins||0)*60000; }
   let timers = []; function clearTimers(){ timers.forEach(clearTimeout); timers=[] }
   function scheduleAll(){ clearTimers(); ensurePermission(); const nowMs=Date.now(); tasks.forEach(t=>{ const fireAt=whenToNotify(t); if(fireAt>nowMs){ timers.push(setTimeout(()=>fireNotify(t), fireAt-nowMs)); } }); }
-  function fireNotify(task){ try{ if('Notification' in window && Notification.permission==='granted'){ const body = `${task.time}${task.notes? ' • '+task.notes:''}`; const n = new Notification(task.title,{ body }); setTimeout(()=> n.close(), 8000);} else { alert(`[Reminder] ${task.title} @ ${task.time}`)} }catch(e){ console.warn(e)} }
+  function fireNotify(task){ try{ if('Notification' in window && Notification.permission==='granted'){ const body = `${t.time}${t.notes? ' • '+t.notes:''}`; const n = new Notification(t.title,{ body }); setTimeout(()=> n.close(), 8000);} else { alert(`[Reminder] ${t.title} @ ${t.time}`)} }catch(e){ console.warn(e)} }
 
   // --------- Seed if empty (per page) ---------
   if(tasks.length===0){
@@ -398,8 +527,8 @@
     const d1=new Date(today); d1.setHours(10,15,0,0);
     const d2=new Date(today); d2.setHours(12,15,0,0);
     tasks=[
-      mkTask('Welcome – add your first item', iso(d1), '10:15', 10, ''),
-      mkTask('Try PDF export from sidebar',   iso(d2), '12:15', 0, '')
+      mkTask('Welcome – add your first item', iso(d1), '10:15', 10, '', 'calendar'),
+      mkTask('Try PDF export (sidebar)',       iso(d2), '12:15', 0,  'Open “Export Range → PDF”.', 'note')
     ];
     saveTasks(currentCal,tasks);
   }
