@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MEANRITH YURIN — Dashboard</title>
+  <style>
+    :root{
+      --bg:#0f1115;--panel:#171a21;--muted:#8a93a6;--text:#e6e9f2;--primary:#3a86ff;--accent:#7c5cff;--success:#2ec27e;--danger:#ff6b6b;--warning:#f7b500;
+      --work:#3a86ff;--school:#2ec27e;--event:#f72585;--personal:#ffa62b;
+      --radius:16px
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:#0f1115;color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+    .app{display:grid;grid-template-columns:280px 1fr;gap:20px;max-width:1200px;margin:24px auto;padding:0 16px}
+    .sidebar{background:var(--panel);border-radius:var(--radius);padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .brand{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+    .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--primary)}
+    h1{font-size:18px;margin:0}
+    .section-title{color:var(--muted);font-size:12px;margin:18px 0 8px;text-transform:uppercase;letter-spacing:.1em}
+    .filters, .cats{display:flex;flex-direction:column;gap:8px}
+    .chip{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:#10131a;border:1px solid #1f2430;cursor:pointer;transition:.2s}
+    .chip:hover{border-color:#2e3546;transform:translateY(-1px)}
+    .chip input{accent-color:var(--primary)}
+    .legend{width:10px;height:10px;border-radius:50%}
+    .hint{color:var(--muted);font-size:12px;margin-top:8px}
+
+    .main{display:grid;gap:16px}
+    .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+    .toolbar .title{font-size:22px;font-weight:700}
+    .toolbar .spacer{flex:1}
+    button, .btn{background:var(--primary);color:white;border:none;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer;box-shadow:0 8px 20px rgba(58,134,255,.25);transition:.2s}
+    button:hover{filter:brightness(1.07);transform:translateY(-1px)}
+    .ghost{background:#12151e;border:1px solid #222836;color:var(--text);box-shadow:none}
+
+    .card{background:var(--panel);border-radius:var(--radius);padding:14px 14px 8px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+
+    .day-header{display:flex;align-items:center;justify-content:space-between;margin:4px 0 8px}
+    .day-header h3{margin:0;font-size:16px}
+
+    .task{display:flex;align-items:flex-start;gap:10px;background:#10131a;border:1px solid #232a39;padding:10px;border-radius:12px;margin:8px 0}
+    .task .title{font-weight:600}
+    .task .meta{color:var(--muted);font-size:12px;margin-top:2px}
+    .task .badge{margin-left:auto;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700;opacity:.95}
+    .task .actions{display:flex;gap:8px;margin-left:6px}
+    .task .icon{background:#0d1017;border:1px solid #242b3a;border-radius:8px;padding:6px 8px;cursor:pointer}
+    .task .icon:hover{border-color:#35405a}
+
+    .cat-work{background:rgba(58,134,255,.18);color:#bcd3ff;border:1px solid rgba(58,134,255,.35)}
+    .cat-school{background:rgba(46,194,126,.18);color:#c7f3df;border:1px solid rgba(46,194,126,.35)}
+    .cat-event{background:rgba(247,37,133,.18);color:#ffd0e8;border:1px solid rgba(247,37,133,.35)}
+    .cat-personal{background:rgba(255,166,43,.18);color:#ffe0b2;border:1px solid rgba(255,166,43,.35)}
+    .cat-teaching{background:rgba(124,92,255,.18);color:#e2dfff;border:1px solid rgba(124,92,255,.35)}
+
+    dialog{border:none;border-radius:16px;padding:0;max-width:520px;width:92vw;background:var(--panel);color:var(--text)}
+    .modal{padding:16px}
+    .form{display:grid;gap:10px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    label{font-size:13px;color:var(--muted)}
+    input,select,textarea{width:100%;padding:10px;border-radius:10px;background:#0f131a;border:1px solid #243047;color:var(--text)}
+    .footer{display:flex;gap:10px;justify-content:flex-end;margin-top:6px}
+    .empty{color:var(--muted);font-size:13px;padding:6px}
+      /* personal branding + subtle code grid */
+    body::after{content:"";position:fixed;inset:0;pointer-events:none;background-image:
+      linear-gradient(to right, rgba(255,255,255,.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,.03) 1px, transparent 1px),
+      radial-gradient(1000px 600px at 80% -10%, rgba(124,92,255,.15), transparent 60%);
+      background-size:24px 24px,24px 24px,auto;z-index:0}
+    body::before{content:"MEANRITH YURIN";position:fixed;top:10px;right:16px;font-weight:900;letter-spacing:.2em;color:rgba(255,255,255,.06);font-size:clamp(20px,4vw,44px);pointer-events:none;z-index:0}
+      /* Print styles */
+    .print-header{display:none}
+    @media print{
+      body{background:#fff !important;color:#111 !important}
+      .app{grid-template-columns:1fr !important}
+      .sidebar{display:none !important}
+      .toolbar button,.day-header button,.task .actions{display:none !important}
+      .card,.task{background:#fff !important;color:#111 !important;box-shadow:none;border:1px solid #e5e7eb}
+      .grid{grid-template-columns:1fr !important}
+      .print-header{display:block;margin-bottom:12px}
+      .card{break-inside:avoid;page-break-inside:avoid}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><span class="dot"></span><h1>MEANRITH YURIN</h1></div>
+      <div class="section-title">Calendars</div>
+      <div class="filters" id="calendarFilters">
+        <label class="chip"><input type="checkbox" data-cal="main" checked/> <span class="legend" style="background:#4dd0e1"></span> My Calendar</label>
+        <label class="chip"><input type="checkbox" data-cal="cal1" checked/> <span class="legend" style="background:#f48fb1"></span> Calendar 1</label>
+      </div>
+      <div class="section-title">Filters</div>
+      <div class="filters" id="filterContainer">
+        <label class="chip"><input type="checkbox" data-cat="work" checked/> <span class="legend" style="background:var(--work)"></span> Work</label>
+        <label class="chip"><input type="checkbox" data-cat="school" checked/> <span class="legend" style="background:var(--school)"></span> School</label>
+        <label class="chip"><input type="checkbox" data-cat="event" checked/> <span class="legend" style="background:var(--event)"></span> Event</label>
+        <label class="chip"><input type="checkbox" data-cat="personal" checked/> <span class="legend" style="background:var(--personal)"></span> Personal</label>
+      
+        <label class="chip"><input type="checkbox" data-cat="teaching" checked/> <span class="legend" style="background:var(--accent)"></span> Teaching</label>
+      </div>
+      <div class="section-title">Quick Actions</div>
+      <div class="cats">
+        <button id="newBtn">+ Add Task / Event</button>
+        <button id="pdfBtn" class="ghost">Export PDF</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="toolbar card">
+        <div class="title">Next 7 days</div>
+        <div class="spacer"></div>
+        <button class="ghost" id="todayBtn">Jump to Today</button>
+        <button id="monthBtn">Month View</button>
+        <button id="newBtnTop">+ Add</button>
+      </div>
+
+      <div id="printHeader" class="print-header card"></div>
+
+      <div class="grid" id="daysGrid"></div>
+      <div class="card" id="monthView" style="display:none">
+        <h3>Month Calendar</h3>
+        <div id="calendarGrid"></div>
+      </div>
+    </main>
+  </div>
+
+  <dialog id="editor">
+    <form method="dialog" class="modal" id="taskForm">
+      <h3 style="margin:0 0 8px">Add / Edit Task</h3>
+      <div class="form">
+        <div>
+          <label>Title</label>
+          <input id="fTitle" required />
+        </div>
+        <div class="row">
+          <div>
+            <label>Date</label>
+            <input id="fDate" type="date" required />
+          </div>
+          <div>
+            <label>Time</label>
+            <input id="fTime" type="time" required />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Category</label>
+            <select id="fCat">
+              <option value="work">Work</option>
+              <option value="school">School</option>
+              <option value="event">Event</option>
+              <option value="personal">Personal</option>
+              <option value="teaching">Teaching</option>
+            </select>
+          </div>
+          <div>
+            <label>Calendar</label>
+            <select id="fCalendar">
+              <option value="main">My Calendar</option>
+              <option value="cal1">Calendar 1</option>
+            </select>
+          </div>
+          <div>
+            <label>Alert (minutes before)</label>
+            <input id="fAlert" type="number" min="0" step="5" placeholder="0 = at time" />
+          </div>
+        </div>
+        <div>
+          <label>Notes</label>
+          <textarea id="fNotes" rows="3" placeholder="Optional"></textarea>
+        </div>
+      </div>
+      <div class="footer">
+        <button type="button" class="ghost" id="cancelBtn">Cancel</button>
+        <button id="saveBtn">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+    <script>
+    const LS_KEY = 'my_week_tasks_v1';
+    function loadTasks(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)) || [] }catch{ return [] } }
+    function saveTasks(list){ localStorage.setItem(LS_KEY, JSON.stringify(list)) }
+    let tasks = loadTasks();
+
+    function mkId(){ return Math.random().toString(36).slice(2,10) }
+    function mkTask(title, category, date, time, alertMins=0, notes='', calendar='main'){
+      return { id:mkId(), title, category, date, time, alertMins:Number(alertMins||0), notes, calendar, done:false };
+    }
+
+    const daysGrid = document.getElementById('daysGrid');
+    const filterContainer = document.getElementById('filterContainer');
+    const calFilters = document.getElementById('calendarFilters');
+
+    const dlg = document.getElementById('editor');
+    const cancelBtn = document.getElementById('cancelBtn');
+    cancelBtn.onclick = (e)=>{ e.preventDefault(); dlg.close(); };
+
+    let editingId = null;
+    const fTitle = document.getElementById('fTitle');
+    const fDate = document.getElementById('fDate');
+    const fTime = document.getElementById('fTime');
+    const fCat = document.getElementById('fCat');
+    const fCal = document.getElementById('fCalendar');
+    const fAlert = document.getElementById('fAlert');
+    const fNotes = document.getElementById('fNotes');
+
+    // Utilities
+    const now = () => new Date();
+    function startOfDay(date){ const d = new Date(date); d.setHours(0,0,0,0); return d }
+    function addDays(date, n){ const d = new Date(date); d.setDate(d.getDate()+n); return d }
+    function fmtDay(d){ return d.toLocaleDateString(undefined,{weekday:'long'}) }
+    function fmtDate(d){ return d.toLocaleDateString(undefined,{month:'short', day:'numeric'}) }
+    function fmtDateFull(d){ return d.toLocaleDateString(undefined,{month:'short', day:'numeric', year:'numeric'}) }
+
+    function getCatFilters(){ return Array.from(filterContainer.querySelectorAll('input[type="checkbox"]')).filter(c=>c.checked).map(c=>c.dataset.cat); }
+    function getCalFilters(){ return Array.from(calFilters.querySelectorAll('input[type="checkbox"]')).filter(c=>c.checked).map(c=>c.dataset.cal); }
+
+    function render(){
+      const cats = getCatFilters();
+      const cals = getCalFilters();
+      const start = startOfDay(now());
+      daysGrid.innerHTML = '';
+      for(let i=0;i<7;i++){
+        const day = addDays(start,i);
+        const dateISO = day.toISOString().slice(0,10);
+        const dayTasks = tasks
+          .filter(t=> (t.date===dateISO) && cats.includes(t.category) && (cals.includes((t.calendar||'main'))))
+          .sort((a,b)=> a.time.localeCompare(b.time));
+        const col = document.createElement('div');
+        col.className='card';
+        col.innerHTML = `
+          <div class="day-header">
+            <h3>${i===0? 'Today' : fmtDay(day)} <span style="color:var(--muted);font-weight:500">${fmtDate(day)}</span></h3>
+            <button class="ghost" data-add="${dateISO}">+ Add</button>
+          </div>
+          <div class="list ${dayTasks.length? '':'empty'}">
+            ${dayTasks.length? '' : '<div class="empty">No tasks yet</div>'}
+          </div>`;
+        const listEl = col.querySelector('.list');
+        dayTasks.forEach(t=> listEl.appendChild(renderTask(t)) );
+        col.querySelector('[data-add]').addEventListener('click', (e)=> openEditor({date:e.target.dataset.add}));
+        daysGrid.appendChild(col);
+      }
+      updatePrintHeader();
+    }
+
+    function renderTask(t){
+      const wrap = document.createElement('div');
+      wrap.className='task';
+      const badgeClass = { work:'cat-work', school:'cat-school', event:'cat-event', personal:'cat-personal', teaching:'cat-teaching' }[t.category] || 'cat-personal';
+      wrap.innerHTML = `
+        <div>
+          <div class="title">${escapeHtml(t.title)}</div>
+          <div class="meta">${t.time} • ${t.calendar ? 'Cal: '+t.calendar+' • ' : ''}${t.notes? escapeHtml(t.notes): ''}</div>
+        </div>
+        <span class="badge ${badgeClass}">${t.category}</span>
+        <div class="actions">
+          <button class="icon" title="Done" data-done="${t.id}">✔</button>
+          <button class="icon" title="Edit" data-edit="${t.id}">✎</button>
+          <button class="icon" title="Delete" data-del="${t.id}">🗑</button>
+        </div>`;
+      wrap.querySelector('[data-done]').onclick = ()=>{ t.done = !t.done; saveTasks(tasks); render(); };
+      wrap.querySelector('[data-edit]').onclick = ()=> openEditor(t);
+      wrap.querySelector('[data-del]').onclick = ()=>{ if(confirm('Delete this item?')){ tasks = tasks.filter(x=>x.id!==t.id); saveTasks(tasks); render(); } };
+      if(t.done){ wrap.style.opacity=.6; wrap.style.textDecoration='line-through' }
+      return wrap;
+    }
+
+    function escapeHtml(s){ return s.replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]) ) }
+
+    function openEditor(seed={}){
+      editingId = seed.id || null;
+      fTitle.value = seed.title || '';
+      fDate.value  = seed.date || new Date().toISOString().slice(0,10);
+      fTime.value  = seed.time || new Date().toTimeString().slice(0,5);
+      fCat.value   = seed.category || 'personal';
+      fCal.value   = seed.calendar || 'main';
+      fAlert.value = (seed.alertMins ?? 0);
+      fNotes.value = seed.notes || '';
+      dlg.showModal();
+    }
+
+    document.getElementById('newBtn').onclick = ()=> openEditor({});
+    document.getElementById('newBtnTop').onclick = ()=> openEditor({});
+    document.getElementById('todayBtn').onclick = ()=> window.scrollTo({top:0,behavior:'smooth'});
+    const pdfBtn = document.getElementById('pdfBtn');
+    if(pdfBtn){ pdfBtn.onclick = ()=> { updatePrintHeader(); window.print(); }; }
+
+    // Month toggle (simple month grid)
+    const monthBtn = document.getElementById('monthBtn');
+    const monthView = document.getElementById('monthView');
+    const calendarGrid = document.getElementById('calendarGrid');
+    if(monthBtn){
+      monthBtn.onclick = ()=>{
+        const showing = monthView.style.display !== 'none';
+        monthView.style.display = showing ? 'none' : 'block';
+        if(!showing) renderMonthSimple();
+      }
+    }
+    function renderMonthSimple(){
+      if(!calendarGrid) return;
+      const base = new Date(now().getFullYear(), now().getMonth(), 1);
+      const firstDow = base.getDay();
+      const daysIn = new Date(base.getFullYear(), base.getMonth()+1, 0).getDate();
+      calendarGrid.innerHTML='';
+      calendarGrid.style.display='grid';
+      calendarGrid.style.gridTemplateColumns='repeat(7, minmax(0,1fr))';
+      calendarGrid.style.gap='6px';
+      for(let i=0;i<firstDow;i++){ calendarGrid.appendChild(document.createElement('div')); }
+      for(let d=1; d<=daysIn; d++){
+        const dt = new Date(base.getFullYear(), base.getMonth(), d);
+        const dateISO = dt.toISOString().slice(0,10);
+        const count = tasks.filter(t=> t.date===dateISO).length;
+        const cell = document.createElement('div');
+        cell.className='card';
+        cell.style.padding='8px';
+        cell.style.cursor='pointer';
+        cell.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><strong>${d}</strong><span style="font-size:12px;color:var(--muted)">${count?count:''}</span></div>`;
+        cell.title = 'Add item on '+dateISO;
+        cell.onclick = ()=> openEditor({date:dateISO});
+        calendarGrid.appendChild(cell);
+      }
+    }; 
+
+    document.getElementById('saveBtn').addEventListener('click', (e)=>{
+      e.preventDefault();
+      const data = {
+        title: fTitle.value.trim(),
+        date:  fDate.value,
+        time:  fTime.value,
+        category: fCat.value,
+        calendar: fCal.value,
+        alertMins: Number(fAlert.value||0),
+        notes: fNotes.value.trim()
+      };
+      if(!data.title) return;
+      if(editingId){
+        const idx = tasks.findIndex(x=>x.id===editingId);
+        tasks[idx] = { ...tasks[idx], ...data };
+      } else {
+        tasks.push(mkTask(data.title, data.category, data.date, data.time, data.alertMins, data.notes, data.calendar));
+      }
+      saveTasks(tasks); render(); dlg.close(); scheduleAll();
+    });
+
+    filterContainer.addEventListener('change', render);
+    calFilters.addEventListener('change', render);
+
+    // Notifications
+    async function ensurePermission(){ if(!('Notification' in window)) return false; if(Notification.permission==='granted') return true; if(Notification.permission!=='denied'){ const p = await Notification.requestPermission(); return p==='granted'; } return false; }
+    function whenToNotify(task){ const dt = new Date(task.date + 'T' + task.time + ':00'); return dt.getTime() - (task.alertMins||0)*60000; }
+    let timers = []; function clearTimers(){ timers.forEach(clearTimeout); timers=[] }
+    function scheduleAll(){ clearTimers(); ensurePermission(); const nowMs=Date.now(); tasks.forEach(t=>{ const fireAt=whenToNotify(t); if(fireAt>nowMs){ timers.push(setTimeout(()=>fireNotify(t), fireAt-nowMs)); } }); }
+    function fireNotify(task){ try{ if('Notification' in window && Notification.permission==='granted'){ const body = `${task.time} • ${(task.calendar||'main').toUpperCase()} • ${task.category.toUpperCase()}${task.notes? ' – '+task.notes:''}`; const n = new Notification(task.title,{ body }); setTimeout(()=> n.close(), 8000);} else { alert(`[Reminder] ${task.title} @ ${task.time}`)} }catch(e){ console.warn(e)} }
+
+    // Upgrade older tasks (no calendar)
+    tasks = tasks.map(t=> ({ calendar:'calendar' in t ? t.calendar : 'main', ...t })); saveTasks(tasks);
+
+    // Seed example if empty
+    if(tasks.length===0){
+      const today = new Date();
+      const iso = (d)=>d.toISOString().slice(0,10);
+      const d1 = new Date(today); d1.setHours(10,15,0,0);
+      const d2 = new Date(today); d2.setHours(12,15,0,0);
+      tasks = [
+        mkTask('Work (Nelson Brian)','teaching', iso(d1), '10:15', 10, '', 'cal1'),
+        mkTask('Lunch','personal', iso(d2), '12:15', 0, 'with team', 'main')
+      ];
+      saveTasks(tasks);
+    }
+
+    render();
+    scheduleAll();
+
+    // Print header updater
+    function updatePrintHeader(){
+      const header = document.getElementById('printHeader');
+      const start = startOfDay(now());
+      const end = addDays(start,6);
+      header.textContent = `MEANRITH YURIN — Schedule (${fmtDateFull(start)} – ${fmtDateFull(end)})`;
+    }
+  </script>
+</body>
+</html>
