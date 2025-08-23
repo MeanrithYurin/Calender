@@ -78,8 +78,15 @@
   /* month view */
   .month-head{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;color:var(--muted);font-size:12px;margin:6px 0}
   .month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-  .daycell{background:#10131a;border:1px solid #232a39;border-radius:12px;padding:8px;min-height:80px;display:flex;flex-direction:column;gap:6px;cursor:pointer}
+  .daycell{background:#10131a;border:1px solid #232a39;border-radius:12px;padding:8px;min-height:96px;display:flex;flex-direction:column;gap:6px;cursor:pointer}
   .daycell:hover{border-color:#35405a}
+  .daycell .mini{display:flex;gap:6px;flex-direction:column}
+  .mini-item{font-size:11px;line-height:1.2;background:#0d1017;border:1px solid #242b3a;border-radius:8px;padding:4px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mini-item[data-cat="work"]{border-color:rgba(77,208,225,.35)}
+  .mini-item[data-cat="school"]{border-color:rgba(127,210,139,.35)}
+  .mini-item[data-cat="personal"]{border-color:rgba(255,166,43,.35)}
+  .mini-item[data-cat="event"]{border-color:rgba(247,37,133,.35)}
+  .mini-item[data-cat="teaching"]{border-color:rgba(124,92,255,.35)}
   .daynum{font-weight:700;color:var(--text);opacity:.9}
   .count{margin-left:auto;font-size:11px;padding:2px 6px;border-radius:999px;background:#0d1017;border:1px solid #242b3a;color:var(--muted)}
   .month-today{outline:2px solid var(--primary);box-shadow:0 0 0 3px rgba(58,134,255,.25) inset}
@@ -139,6 +146,8 @@
         <div class="btn active" data-route="calendar">Calendar</div>
         <div class="btn" data-route="work">Work</div>
         <div class="btn" data-route="school">School</div>
+        <div class="btn" data-route="weekday">WEEK-DAY</div>
+        <div class="btn" data-route="weekend">WEEK-END</div>
         <div class="btn" data-route="personal">Personal</div>
       </div>
 
@@ -192,7 +201,7 @@
         <div class="month-grid" id="calendarGrid"></div>
       </div>
 
-      <!-- LIST PAGES (Work / School / Personal) -->
+      <!-- LIST PAGES (Work / School / WEEK-DAY / WEEK-END / Personal) -->
       <div class="card" id="listPage" style="display:none">
         <div class="day-header">
           <h3 id="listTitle">List</h3>
@@ -280,6 +289,9 @@ const KEY_CAL = 'unified_cal_tasks_v1';
 const KEY_WORK = 'list_work_v1';
 const KEY_SCHOOL = 'list_school_v1';
 const KEY_PERSONAL = 'list_personal_v1';
+/* NEW boards */
+const KEY_WEEKDAY = 'list_weekday_v1';
+const KEY_WEEKEND = 'list_weekend_v1';
 
 const load = (k)=>{ try{return JSON.parse(localStorage.getItem(k))||[]}catch{return[]} };
 const save = (k,v)=> localStorage.setItem(k, JSON.stringify(v));
@@ -288,6 +300,8 @@ let calTasks = load(KEY_CAL);
 let listWork = load(KEY_WORK);
 let listSchool = load(KEY_SCHOOL);
 let listPersonal = load(KEY_PERSONAL);
+let listWeekday = load(KEY_WEEKDAY);
+let listWeekend = load(KEY_WEEKEND);
 
 /* mirror from calendar → list (work/school/personal) */
 function upsertMirrorFromCalendar(task, prevCategory){
@@ -297,7 +311,6 @@ function upsertMirrorFromCalendar(task, prevCategory){
     const arr = load(key).filter(i=> i.sourceId!==id);
     save(key, arr);
   };
-  /* if category changed, remove old mirror */
   if(prevCategory && prevCategory!==task.category){
     removeFrom(targetKey(prevCategory), task.id);
   }
@@ -313,7 +326,6 @@ function upsertMirrorFromCalendar(task, prevCategory){
   if(idx>=0) arr[idx] = payload; else arr.push(payload);
   save(key, arr);
 }
-/* remove mirror when calendar item deleted */
 function removeMirrorForCalendar(task){
   const key = task.category==='work'?KEY_WORK : task.category==='school'?KEY_SCHOOL : task.category==='personal'?KEY_PERSONAL : null;
   if(!key) return;
@@ -332,22 +344,19 @@ function fmtDate(d){ return d.toLocaleDateString(undefined,{month:'short', day:'
 function fmtDateFull(d){ return d.toLocaleDateString(undefined,{month:'short', day:'numeric', year:'numeric'}) }
 
 /* ===================== ROUTER ===================== */
-let route = (location.hash.replace('#','') || 'calendar'); // 'calendar'|'work'|'school'|'personal'
+let route = (location.hash.replace('#','') || 'calendar'); // 'calendar'|'work'|'school'|'weekday'|'weekend'|'personal'
 const nav = document.getElementById('navTabs');
 function setRoute(r){
   route = r; location.hash = '#'+r;
   nav.querySelectorAll('.btn').forEach(b=> b.classList.toggle('active', b.dataset.route===r));
-  // show/hide calendar blocks vs list block
   const isCal = r==='calendar';
   document.getElementById('calToolbar').style.display = isCal ? '' : 'none';
   document.getElementById('daysGrid').style.display = isCal ? '' : 'none';
   document.getElementById('monthView').style.display = (isCal && monthShowing)? '' : 'none';
   document.getElementById('calFilterBox').style.display = isCal ? '' : 'none';
   document.getElementById('listPage').style.display = isCal ? 'none' : '';
-  // quick actions visibility
   document.getElementById('pdfBtn').style.display = isCal ? '' : 'none';
   document.getElementById('rangeBtn').style.display = isCal ? '' : 'none';
-  // render correct view
   if(isCal){ renderWeek(); if(monthShowing) renderMonth(); }
   else { renderList(r); }
 }
@@ -440,15 +449,39 @@ function renderMonth(){
   for(let d=1; d<=daysIn; d++){
     const dt = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), d);
     const dateISO = dt.toISOString().slice(0,10);
-    const count = calTasks.filter(t=> t.date===dateISO && selectedCats.has(t.category)).length;
+    const list = calTasks
+      .filter(t=> t.date===dateISO && selectedCats.has(t.category))
+      .sort((a,b)=> a.time.localeCompare(b.time));
     const cell = document.createElement('div');
     cell.className='daycell';
     if(dateISO===todayISO) cell.classList.add('month-today');
-    const top = document.createElement('div'); top.style.display='flex'; top.style.alignItems='center'; top.style.gap='6px';
+
+    // header row: day number + count
+    const top = document.createElement('div'); 
+    top.style.display='flex'; top.style.alignItems='center'; top.style.gap='6px';
     const dn  = document.createElement('div'); dn.className='daynum'; dn.textContent=d;
-    const ct  = document.createElement('div'); ct.className='count'; ct.textContent = count>0? String(count): '';
+    const ct  = document.createElement('div'); ct.className='count'; ct.textContent = list.length>0? String(list.length): '';
     top.appendChild(dn); top.appendChild(ct);
     cell.appendChild(top);
+
+    // mini list (show up to 3 titles)
+    const mini = document.createElement('div'); mini.className='mini';
+    const maxShow = 3;
+    list.slice(0,maxShow).forEach(t=>{
+      const it = document.createElement('div');
+      it.className='mini-item';
+      it.dataset.cat = t.category;
+      it.textContent = t.time ? `${t.time} · ${t.title}` : t.title;
+      mini.appendChild(it);
+    });
+    if(list.length > maxShow){
+      const more = document.createElement('div');
+      more.className='mini-item';
+      more.textContent = `+${list.length - maxShow} more`;
+      mini.appendChild(more);
+    }
+    cell.appendChild(mini);
+
     cell.title = 'Add on '+dateISO;
     cell.onclick = ()=> openCalEditor({date:dateISO});
     calendarGrid.appendChild(cell);
@@ -456,11 +489,7 @@ function renderMonth(){
 }
 document.getElementById('prevMonth').onclick = ()=>{ monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth()-1, 1); renderMonth(); };
 document.getElementById('nextMonth').onclick = ()=>{ monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth()+1, 1); renderMonth(); };
-monthBtn.onclick = ()=>{
-  monthShowing = !monthShowing;
-  monthView.style.display = monthShowing ? '' : 'none';
-  if(monthShowing) renderMonth();
-};
+monthBtn.onclick = ()=>{ monthShowing = !monthShowing; monthView.style.display = monthShowing ? '' : 'none'; if(monthShowing) renderMonth(); };
 
 /* calendar dialog */
 const edCal = document.getElementById('editorCal');
@@ -585,10 +614,12 @@ const listWrap = document.getElementById('listWrap');
 const listTitle= document.getElementById('listTitle');
 document.getElementById('listAddBtn').onclick = ()=> openListEditor({});
 
-function renderList(kind){ // 'work' | 'school' | 'personal'
-  listTitle.textContent = {work:'Work', school:'School', personal:'Personal'}[kind] + ' — List';
+function renderList(kind){ // 'work' | 'school' | 'weekday' | 'weekend' | 'personal'
+  const names = {work:'Work', school:'School', weekday:'WEEK-DAY', weekend:'WEEK-END', personal:'Personal'};
+  listTitle.textContent = names[kind] + ' — List';
   listWrap.innerHTML = '';
-  const arr = kind==='work'? load(KEY_WORK) : kind==='school'? load(KEY_SCHOOL) : load(KEY_PERSONAL);
+  const keyMap = {work:KEY_WORK, school:KEY_SCHOOL, weekday:KEY_WEEKDAY, weekend:KEY_WEEKEND, personal:KEY_PERSONAL};
+  const arr = load(keyMap[kind]);
   arr.sort((a,b)=> (a.date||'')+(a.time||'') > (b.date||'')+(b.time||'') ? 1 : -1);
   if(arr.length===0){ listWrap.innerHTML = `<div class="empty">No items yet</div>`; return; }
   arr.forEach(item=>{
@@ -596,25 +627,24 @@ function renderList(kind){ // 'work' | 'school' | 'personal'
     row.className='list-item';
     row.innerHTML = `
       <div>
-        <div class="title" style="font-weight:700">${escapeHtml(item.title)} ${item.source==='calendar'?'<span class="pill p-'+kind+'">from calendar</span>':''}</div>
+        <div class="title" style="font-weight:700">${escapeHtml(item.title)} ${item.source==='calendar'?'<span class="pill p-personal">from calendar</span>':''}</div>
         <div class="meta">${item.date? item.date : ''} ${item.time? ('• '+item.time): ''} ${item.notes? ('• '+escapeHtml(item.notes)) : ''}</div>
       </div>
       <div class="actions">
         <button class="icon" data-done="${item.id}">✔</button>
-        ${item.source==='calendar' ? '' : '<button class="icon" data-edit="'+item.id+'">✎</button>'}
+        <button class="icon" data-edit="${item.id}">✎</button>
         <button class="icon" data-del="${item.id}">🗑</button>
       </div>`;
     row.querySelector('[data-done]').onclick = ()=>{ item.done=!item.done; saveList(kind, replaceIn(arr,item)); renderList(kind); };
-    const editBtn = row.querySelector('[data-edit]');
-    if(editBtn) editBtn.onclick = ()=> openListEditor(item, kind);
+    row.querySelector('[data-edit]').onclick = ()=> openListEditor(item, kind);
     row.querySelector('[data-del]').onclick = ()=>{ if(confirm('Delete this item?')){ const out=arr.filter(x=>x.id!==item.id); saveList(kind,out); renderList(kind);} };
     if(item.done){ row.style.opacity=.6; row.style.textDecoration='line-through' }
     listWrap.appendChild(row);
   });
 }
 function saveList(kind, arr){
-  const k = kind==='work'?KEY_WORK : kind==='school'?KEY_SCHOOL : KEY_PERSONAL;
-  save(k, arr);
+  const map = {work:KEY_WORK, school:KEY_SCHOOL, weekday:KEY_WEEKDAY, weekend:KEY_WEEKEND, personal:KEY_PERSONAL};
+  save(map[kind], arr);
 }
 function replaceIn(arr, item){
   const idx = arr.findIndex(x=>x.id===item.id); const copy=[...arr]; copy[idx]=item; return copy;
@@ -642,15 +672,15 @@ document.getElementById('lSave').addEventListener('click', (e)=>{
   e.preventDefault();
   const data = { title:lTitle.value.trim(), date:lDate.value||'', time:lTime.value||'', notes:lNotes.value.trim(), done:false, source:'board' };
   if(!data.title) return;
-  const key = listKind==='work'?KEY_WORK : listKind==='school'?KEY_SCHOOL : KEY_PERSONAL;
-  let arr = load(key);
+  const keyMap = {work:KEY_WORK, school:KEY_SCHOOL, weekday:KEY_WEEKDAY, weekend:KEY_WEEKEND, personal:KEY_PERSONAL};
+  let arr = load(keyMap[listKind]);
   if(editIdList){
     const idx = arr.findIndex(x=>x.id===editIdList);
     arr[idx] = { ...arr[idx], ...data };
   }else{
     arr.push({ id: mkId(), ...data });
   }
-  save(key, arr); edList.close(); renderList(listKind);
+  save(keyMap[listKind], arr); edList.close(); renderList(listKind);
 });
 
 /* ===================== COMMON BUTTONS ===================== */
